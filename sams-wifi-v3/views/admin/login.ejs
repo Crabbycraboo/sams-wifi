@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+    .login-box {
+      position:relative; z-index:1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      width: 100%; max-width: 380px;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-lg);
+    }
+    .admin-brand { text-align:center; margin-bottom:28px; }
+    .admin-brand .icon { font-size:2.5rem; margin-bottom:8px; }
+    .admin-brand h1 { font-size:1.4rem; }
+    .admin-brand p { color:var(--gray-400); font-size:0.85rem; margin-top:4px; }
+    .form-input-admin {
+      padding: 13px 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-sm);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 0.95rem;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .form-input-admin:focus { outline:none; border-color:var(--blue-300); }
+    .form-input-admin::placeholder { color:rgba(255,255,255,0.3); }
+  </style>
+</head>
+<body>
+  <div class="bg-network"></div>
+  <div class="login-box">
+    <div class="admin-brand">
+      <div class="icon">🔐</div>
+      <h1>Admin Panel</h1>
+      <p>Sam's WiFi Management System</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-error mb-2"><span>⚠️</span> <%= error %></div>
+    <% } %>
+
+    <form action="/admin/login" method="POST">
+      <div class="form-group mb-2">
+        <label class="form-label" for="username">Username</label>
+        <input class="form-input-admin" type="text" id="username" name="username" placeholder="admin" required autofocus>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-input-admin" type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg">🔓 Login to Admin</button>
+    </form>
+
+    <p style="text-align:center; margin-top:20px; font-size:0.75rem; color:var(--gray-400);">
+      <a href="/" style="color:var(--blue-300); text-decoration:none;">← Back to Customer Portal</a>
+    </p>
+  </div>
+</body>
+</html>
