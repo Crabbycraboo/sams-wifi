@@ -6,10 +6,6 @@ const { initDb, checkExpiredVouchers, pruneRateLimits } = require('./db/database
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -32,6 +28,9 @@ app.use(session({
     maxAge: 4 * 60 * 60 * 1000
   }
 }));
+
+// Health check for Railway — must be before other routes
+app.get('/health', (req, res) => res.send('OK'));
 
 app.use('/', require('./routes/customer'));
 app.use('/admin', require('./routes/admin'));
@@ -59,6 +58,7 @@ initDb().then(() => {
     console.log('[Cleanup] Rate limit records pruned');
   }, 60 * 60 * 1000);
 
+  // Single app.listen — only here, after DB is ready
   app.listen(PORT, () => {
     console.log(`\n📶 Sam's WiFi running at http://localhost:${PORT}`);
     console.log(`🔐 Admin panel: http://localhost:${PORT}/admin`);
@@ -69,5 +69,3 @@ initDb().then(() => {
   console.error('[FATAL] DB init failed:', err);
   process.exit(1);
 });
-app.get('/', (req, res) => res.send('App is running'));
-app.get('/health', (req, res) => res.send('OK'));
