@@ -109,7 +109,7 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── const PLANS 
+// ─── PLANS ───────────────────────────────────────────────────────────────────
 const PLANS = [
   { id: 1, name: '₱5 / 15 min', price: 5, duration_ms: 15 * 60 * 1000 },
   { id: 2, name: '₱10 / 30 min', price: 10, duration_ms: 30 * 60 * 1000 },
@@ -117,112 +117,7 @@ const PLANS = [
   { id: 4, name: '₱60 / 3 hrs', price: 60, duration_ms: 3 * 60 * 60 * 1000 }
 ];
 
-// ─── Home / Login ─────────────────────────────────────────────────────────────
-router.get('/', (req, res) => {
-  if (req.session.voucher) return res.redirect('/portal');
-  const sleepMode = getSleepMode();
-  res.render('login', {
-    title: "Sam's WiFi",
-    plans: PLANS,
-    error: null,
-    code: '',
-    sleepMode,
-    gcash: GCASH,
-  });
-});
-
-// ─── Voucher submission ───────────────────────────────────────────────────────
-router.post('/connect', (req, res) => {
-  const { code } = req.body;
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
-  const deviceId = buildDeviceId(req);
-  const sleepMode = getSleepMode();
-
-  // Rate limit — 10 attempts per 5 minutes
-  const rateCheck = checkRateLimit(ip, 'code_attempt');
-  if (!rateCheck.allowed) {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: `Too many attempts. Please wait ${rateCheck.retryMins} minute(s).`,
-      code: ''
-    });
-  }
-
-  if (!code || code.trim().length < 4) {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: 'Please enter your voucher code.',
-      code: code || ''
-    });
-  }
-
-  const result = redeemVoucher(code, deviceId);
-
-  if (!result.success) {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: result.message,
-      code: code.toUpperCase()
-    });
-  }
-
-  // Sleep mode: block ₱5 / 30min vouchers
-  if (sleepMode && result.voucher.plan === '30min') {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱10. Mag-GCash at makipag-ugnayan para sa iyong code. (Sam is asleep. Minimum plan is ₱10. Pay via GCash and message for your code.)',
-      code: ''
-    });
-  }
-
-  req.session.voucher = {
-    code: result.voucher.code,
-    plan: result.voucher.plan,
-    price: result.voucher.price,
-    expires_at: result.voucher.expires_at,
-    device_id: deviceId,
-    wifi_password: result.voucher.wifi_password || null,
-  };
-
-  res.redirect('/portal');
-});
-
-// ─── Portal ───────────────────────────────────────────────────────────────────
-router.get('/portal', (req, res) => {
-  if (!req.session.voucher) return res.redirect('/');
-
-  const v = req.session.voucher;
-  const now = Date.now();
-
-  const currentDevice = buildDeviceId(req);
-  if (currentDevice !== v.device_id) {
-    req.session.destroy();
-    return res.redirect('/');
-  }
-
-  if (now >= v.expires_at) {
-    req.session.destroy();
-    return res.redirect('/expired');
-  }
-
-  res.render('portal', { title: "Sam's WiFi - Connected", voucher: v, plans: PLANS });
-});
-
-// ─── Expired ──────────────────────────────────────────────────────────────────
-router.get('/expired', (req, res) => {
-  req.session.destroy(() => {});
-  res.render('expired', { title: "Sam's WiFi - Session Expired", plans: PLANS });
-});
-
-// ─── Logout ───────────────────────────────────────────────────────────────────
-router.post('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/');
-});
-
-module.exports = router;
-
-// ─── Rate limiting ────────────────────────────────────────────────────────────
+// ─── Rate limiting ───────────────────────────────────────────────────────────
 const RATE_LIMITS = {
   code_attempt: { windowMs: 5 * 60 * 1000, maxAttempts: 10 },
   admin_login:  { windowMs: 15 * 60 * 1000, maxAttempts: 5 },
@@ -261,7 +156,7 @@ function pruneRateLimits() {
   saveDb();
 }
 
-// ─── Device fingerprinting ────────────────────────────────────────────────────
+// ─── Device fingerprinting ───────────────────────────────────────────────────
 function buildDeviceId(req) {
   const ip   = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
   const ua   = req.headers['user-agent'] || 'unknown';
@@ -272,7 +167,7 @@ function buildDeviceId(req) {
   return 'dev_' + Math.abs(hash).toString(36);
 }
 
-// ─── WiFi password generation ─────────────────────────────────────────────────
+// ─── WiFi password generation ────────────────────────────────────────────────
 function generateWifiPassword() {
   const words = ['mango','taho','halo','puto','sago','buko','mais','tuyo','tinapay','kape'];
   const nums  = Math.floor(100 + Math.random() * 900);
@@ -280,7 +175,7 @@ function generateWifiPassword() {
   return word + nums;
 }
 
-// ─── Voucher generation ───────────────────────────────────────────────────────
+// ─── Voucher generation ──────────────────────────────────────────────────────
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = 'SAM-';
@@ -289,7 +184,7 @@ function generateCode() {
 }
 
 function generateVouchers(plan, count, batchId, useWifiPassword = false) {
-  const planInfo = PLANS[plan];
+  const planInfo = PLANS.find(p => p.id === parseInt(plan));
   if (!planInfo) throw new Error('Invalid plan: ' + plan);
 
   const wifiPassword = useWifiPassword ? generateWifiPassword() : null;
@@ -313,14 +208,14 @@ function generateVouchers(plan, count, batchId, useWifiPassword = false) {
   return { codes: generated, wifiPassword };
 }
 
-// ─── Redemption ───────────────────────────────────────────────────────────────
+// ─── Redemption ──────────────────────────────────────────────────────────────
 function redeemVoucher(code, deviceId) {
   const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
-  if (!voucher) return { success: false, error: 'invalid', message: 'Code not found. Check your voucher and try again.' };
-  if (voucher.status === 'expired') return { success: false, error: 'expired', message: 'This voucher has already been used.' };
+  if (!voucher) return { success: false, message: 'Code not found. Check your voucher and try again.' };
+  if (voucher.status === 'expired') return { success: false, message: 'This voucher has already been used.' };
   if (voucher.status === 'active') {
     if (voucher.device_id === deviceId) return { success: true, voucher };
-    return { success: false, error: 'in_use', message: 'This voucher is already being used on another device.' };
+    return { success: false, message: 'This voucher is already being used on another device.' };
   }
   const now = Date.now();
   const expiresAt = now + voucher.duration_ms;
@@ -344,7 +239,7 @@ function checkExpiredVouchers() {
   return expired.length;
 }
 
-// ─── Admin queries ────────────────────────────────────────────────────────────
+// ─── Admin queries ───────────────────────────────────────────────────────────
 function getActiveUsers() {
   const now = Date.now();
   return query(`SELECT code, plan, price, device_id, started_at, expires_at, (expires_at - ?) as ms_remaining
@@ -402,10 +297,10 @@ function getVoucherCounts() {
 
 function getUnusedCounts() {
   return {
+    '15min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='15min'`) || {c:0}).c,
     '30min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='30min'`) || {c:0}).c,
-    '1hr':   (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='1hr'`) || {c:0}).c,
-    '3hr':   (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='3hr'`) || {c:0}).c,
-    'unli':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='unli'`) || {c:0}).c,
+    '60min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='60min'`) || {c:0}).c,
+    '3hrs':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='3hrs'`) || {c:0}).c,
   };
 }
 
@@ -413,7 +308,7 @@ function getWifiBatches() {
   return query(`SELECT * FROM wifi_batches ORDER BY created_at DESC LIMIT 10`);
 }
 
-// ─── Sleep Mode ───────────────────────────────────────────────────────────────
+// ─── Sleep Mode ──────────────────────────────────────────────────────────────
 function setSleepMode(val) {
   db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
   db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('sleep_mode', ?)`, [val ? '1' : '0']);
