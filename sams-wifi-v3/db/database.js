@@ -109,8 +109,8 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── const PLANS =
-[
+// ─── const PLANS 
+const PLANS = [
   { id: 1, name: '₱5 / 15 min', price: 5, duration_ms: 15 * 60 * 1000 },
   { id: 2, name: '₱10 / 30 min', price: 10, duration_ms: 30 * 60 * 1000 },
   { id: 3, name: '₱20 / 60 min', price: 20, duration_ms: 60 * 60 * 1000 },
