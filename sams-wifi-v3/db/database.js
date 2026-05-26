@@ -109,13 +109,118 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── Plans ────────────────────────────────────────────────────────────────────
-const PLANS = {
-  '30min':  { label: '30 Minutes', price: 5,  duration_ms: 30 * 60 * 1000 },
-  '1hr':    { label: '1 Hour',     price: 10, duration_ms: 60 * 60 * 1000 },
-  '3hr':    { label: '3 Hours',    price: 20, duration_ms: 3 * 60 * 60 * 1000 },
-  'unli':   { label: 'Buong Araw / Whole Day', price: 60, duration_ms: 24 * 60 * 60 * 1000 },
-};
+// ─── const PLANS =
+[
+  { id: 1, name: '₱5 / 15 min', price: 5, duration_ms: 15 * 60 * 1000 },
+  { id: 2, name: '₱10 / 30 min', price: 10, duration_ms: 30 * 60 * 1000 },
+  { id: 3, name: '₱20 / 60 min', price: 20, duration_ms: 60 * 60 * 1000 },
+  { id: 4, name: '₱60 / 3 hrs', price: 60, duration_ms: 3 * 60 * 60 * 1000 }
+];
+
+// ─── Home / Login ─────────────────────────────────────────────────────────────
+router.get('/', (req, res) => {
+  if (req.session.voucher) return res.redirect('/portal');
+  const sleepMode = getSleepMode();
+  res.render('login', {
+    title: "Sam's WiFi",
+    plans: PLANS,
+    error: null,
+    code: '',
+    sleepMode,
+    gcash: GCASH,
+  });
+});
+
+// ─── Voucher submission ───────────────────────────────────────────────────────
+router.post('/connect', (req, res) => {
+  const { code } = req.body;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+  const deviceId = buildDeviceId(req);
+  const sleepMode = getSleepMode();
+
+  // Rate limit — 10 attempts per 5 minutes
+  const rateCheck = checkRateLimit(ip, 'code_attempt');
+  if (!rateCheck.allowed) {
+    return res.render('login', {
+      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+      error: `Too many attempts. Please wait ${rateCheck.retryMins} minute(s).`,
+      code: ''
+    });
+  }
+
+  if (!code || code.trim().length < 4) {
+    return res.render('login', {
+      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+      error: 'Please enter your voucher code.',
+      code: code || ''
+    });
+  }
+
+  const result = redeemVoucher(code, deviceId);
+
+  if (!result.success) {
+    return res.render('login', {
+      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+      error: result.message,
+      code: code.toUpperCase()
+    });
+  }
+
+  // Sleep mode: block ₱5 / 30min vouchers
+  if (sleepMode && result.voucher.plan === '30min') {
+    return res.render('login', {
+      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱10. Mag-GCash at makipag-ugnayan para sa iyong code. (Sam is asleep. Minimum plan is ₱10. Pay via GCash and message for your code.)',
+      code: ''
+    });
+  }
+
+  req.session.voucher = {
+    code: result.voucher.code,
+    plan: result.voucher.plan,
+    price: result.voucher.price,
+    expires_at: result.voucher.expires_at,
+    device_id: deviceId,
+    wifi_password: result.voucher.wifi_password || null,
+  };
+
+  res.redirect('/portal');
+});
+
+// ─── Portal ───────────────────────────────────────────────────────────────────
+router.get('/portal', (req, res) => {
+  if (!req.session.voucher) return res.redirect('/');
+
+  const v = req.session.voucher;
+  const now = Date.now();
+
+  const currentDevice = buildDeviceId(req);
+  if (currentDevice !== v.device_id) {
+    req.session.destroy();
+    return res.redirect('/');
+  }
+
+  if (now >= v.expires_at) {
+    req.session.destroy();
+    return res.redirect('/expired');
+  }
+
+  res.render('portal', { title: "Sam's WiFi - Connected", voucher: v, plans: PLANS });
+});
+
+// ─── Expired ──────────────────────────────────────────────────────────────────
+router.get('/expired', (req, res) => {
+  req.session.destroy(() => {});
+  res.render('expired', { title: "Sam's WiFi - Session Expired", plans: PLANS });
+});
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+router.post('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/');
+});
+
+module.exports = router;
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 const RATE_LIMITS = {
