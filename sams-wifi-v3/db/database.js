@@ -1,10 +1,11 @@
-// db/database.js — with free trial tracking + notifications
+// db/database.js — with auto-cleanup, backup/export, and refund system
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'sams_wifi.db');
+const BACKUP_DIR = path.join(__dirname, '..', 'backups');
 
 let SQL, db;
 
@@ -34,7 +35,8 @@ async function initDb() {
     expires_at INTEGER,
     created_at INTEGER NOT NULL,
     batch_id TEXT,
-    wifi_password TEXT
+    wifi_password TEXT,
+    refunded INTEGER DEFAULT 0
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS sessions_log (
@@ -93,6 +95,13 @@ async function initDb() {
     has_voucher INTEGER DEFAULT 0
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS backups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    size INTEGER
+  )`);
+
   const adminRows = db.exec(`SELECT id FROM admin_users WHERE username = 'admin'`);
   if (!adminRows.length || !adminRows[0].values.length) {
     const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'sams2024', 10);
@@ -101,8 +110,19 @@ async function initDb() {
     console.log('[DB] Default admin created. user:admin pass:sams2024 — change immediately!');
   }
 
+  // Create backups directory
+  if (!fs.existsSync(BACKUP_DIR)) {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  }
+
   saveDb();
   console.log(`[DB] Ready at ${DB_PATH}`);
+  
+  // Schedule daily backup
+  scheduleAutoBackup();
+  
+  // Schedule daily cleanup
+  scheduleAutoCleanup();
 }
 
 function query(sql, params = []) {
@@ -125,7 +145,7 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── PLANS — Consistent ₱0.40/minute ────────────────────────────────────────
+// ─── PLANS ────────────────────────────────────────────────────────────────────
 const PLANS = [
   { id: 1, name: '₱2 / 5 min',   price: 2,  duration_ms: 5 * 60 * 1000 },
   { id: 2, name: '₱5 / 15 min',  price: 5,  duration_ms: 15 * 60 * 1000 },
@@ -134,7 +154,7 @@ const PLANS = [
   { id: 5, name: '₱60 / 3 hrs',  price: 60, duration_ms: 3 * 60 * 60 * 1000 }
 ];
 
-// ─── Rate limiting ───────────────────────────────────────────────────────────
+// ─── Rate limiting ────────────────────────────────────────────────────────────
 const RATE_LIMITS = {
   code_attempt: { windowMs: 5 * 60 * 1000, maxAttempts: 10 },
   admin_login:  { windowMs: 15 * 60 * 1000, maxAttempts: 5 },
@@ -173,7 +193,7 @@ function pruneRateLimits() {
   saveDb();
 }
 
-// ─── Device fingerprinting ───────────────────────────────────────────────────
+// ─── Device fingerprinting ────────────────────────────────────────────────────
 function buildDeviceId(req) {
   const ip   = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
   const ua   = req.headers['user-agent'] || 'unknown';
@@ -184,7 +204,7 @@ function buildDeviceId(req) {
   return 'dev_' + Math.abs(hash).toString(36);
 }
 
-// ─── WiFi password generation ────────────────────────────────────────────────
+// ─── WiFi password generation ─────────────────────────────────────────────────
 function generateWifiPassword() {
   const words = ['mango','taho','halo','puto','sago','buko','mais','tuyo','tinapay','kape'];
   const nums  = Math.floor(100 + Math.random() * 900);
@@ -192,7 +212,7 @@ function generateWifiPassword() {
   return word + nums;
 }
 
-// ─── Voucher generation ──────────────────────────────────────────────────────
+// ─── Voucher generation ───────────────────────────────────────────────────────
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = 'SAM-';
@@ -225,10 +245,11 @@ function generateVouchers(plan, count, batchId, useWifiPassword = false) {
   return { codes: generated, wifiPassword };
 }
 
-// ─── Redemption ──────────────────────────────────────────────────────────────
+// ─── Redemption ───────────────────────────────────────────────────────────────
 function redeemVoucher(code, deviceId) {
   const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
   if (!voucher) return { success: false, message: 'Code not found. Check your voucher and try again.' };
+  if (voucher.refunded) return { success: false, message: 'This voucher has been refunded.' };
   if (voucher.status === 'expired') return { success: false, message: 'This voucher has already been used.' };
   if (voucher.status === 'active') {
     if (voucher.device_id === deviceId) return { success: true, voucher };
@@ -256,7 +277,22 @@ function checkExpiredVouchers() {
   return expired.length;
 }
 
-// ─── Admin queries ───────────────────────────────────────────────────────────
+// ─── Refund System ────────────────────────────────────────────────────────────
+function refundVoucher(code) {
+  const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
+  if (!voucher) return { success: false, error: 'Voucher not found' };
+  if (voucher.refunded) return { success: false, error: 'Already refunded' };
+  
+  run(`UPDATE vouchers SET refunded=1, status='unused', device_id=NULL, started_at=NULL, expires_at=NULL WHERE id=?`, [voucher.id]);
+  
+  return { success: true, refunded_amount: voucher.price };
+}
+
+function getRefundHistory() {
+  return query(`SELECT code, plan, price, created_at FROM vouchers WHERE refunded=1 ORDER BY created_at DESC LIMIT 50`);
+}
+
+// ─── Admin queries ────────────────────────────────────────────────────────────
 function getActiveUsers() {
   const now = Date.now();
   return query(`SELECT code, plan, price, device_id, started_at, expires_at, (expires_at - ?) as ms_remaining
@@ -309,6 +345,7 @@ function getVoucherCounts() {
     unused:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused'`) || {c:0}).c,
     active:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='active'`) || {c:0}).c,
     expired: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='expired'`) || {c:0}).c,
+    refunded: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE refunded=1`) || {c:0}).c,
   };
 }
 
@@ -326,7 +363,7 @@ function getWifiBatches() {
   return query(`SELECT * FROM wifi_batches ORDER BY created_at DESC LIMIT 10`);
 }
 
-// ─── Sleep Mode ──────────────────────────────────────────────────────────────
+// ─── Sleep Mode ───────────────────────────────────────────────────────────────
 function setSleepMode(val) {
   db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
   db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('sleep_mode', ?)`, [val ? '1' : '0']);
@@ -341,7 +378,7 @@ function getSleepMode() {
   } catch(e) { return false; }
 }
 
-// ─── Notifications ───────────────────────────────────────────────────────────
+// ─── Notifications ────────────────────────────────────────────────────────────
 function createNotification(type, message, data = {}) {
   run(`INSERT INTO notifications (type, message, data, created_at) VALUES (?, ?, ?, ?)`,
     [type, message, JSON.stringify(data), Date.now()]);
@@ -355,12 +392,7 @@ function markNotificationRead(id) {
   run(`UPDATE notifications SET read=1 WHERE id=?`, [id]);
 }
 
-function clearOldNotifications() {
-  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-  run(`DELETE FROM notifications WHERE created_at < ?`, [cutoff]);
-}
-
-// ─── Free Trial Tracking ─────────────────────────────────────────────────────
+// ─── Free Trial Tracking ──────────────────────────────────────────────────────
 function trackConnection(mac) {
   const existing = queryOne(`SELECT id FROM connections WHERE mac=? AND has_voucher=0`, [mac]);
   if (!existing) {
@@ -383,9 +415,99 @@ function hasValidVoucher(mac) {
   return conn ? conn.has_voucher === 1 : false;
 }
 
-function cleanupOldConnections() {
-  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-  run(`DELETE FROM connections WHERE connected_at < ?`, [cutoff]);
+// ─── BACKUP & CLEANUP ─────────────────────────────────────────────────────────
+function createBackup() {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `backup-${timestamp}.json`;
+    const filepath = path.join(BACKUP_DIR, filename);
+
+    // Export all data
+    const vouchers = query(`SELECT * FROM vouchers`);
+    const sessions = query(`SELECT * FROM sessions_log`);
+    const backupData = {
+      backed_up_at: new Date().toISOString(),
+      vouchers,
+      sessions,
+      stats: {
+        total_vouchers: vouchers.length,
+        total_sessions: sessions.length,
+        total_revenue: sessions.reduce((sum, s) => sum + s.price, 0)
+      }
+    };
+
+    fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
+    
+    // Record backup
+    run(`INSERT INTO backups (filename, created_at, size) VALUES (?, ?, ?)`,
+      [filename, Date.now(), fs.statSync(filepath).size]);
+
+    // Keep only last 30 backups
+    const backups = query(`SELECT filename FROM backups ORDER BY created_at DESC LIMIT 30, 1000`);
+    backups.forEach(b => {
+      try {
+        fs.unlinkSync(path.join(BACKUP_DIR, b.filename));
+        db.run(`DELETE FROM backups WHERE filename=?`, [b.filename]);
+      } catch(e) {}
+    });
+    saveDb();
+
+    console.log(`[BACKUP] Created: ${filename}`);
+    return { success: true, filename, size: fs.statSync(filepath).size };
+  } catch(e) {
+    console.error('[BACKUP] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+function getBackups() {
+  return query(`SELECT * FROM backups ORDER BY created_at DESC LIMIT 10`);
+}
+
+function cleanupExpiredVouchers() {
+  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+  const deleted = db.run(`DELETE FROM vouchers WHERE status='expired' AND created_at < ?`, [thirtyDaysAgo]);
+  
+  const oldConnections = Date.now() - (24 * 60 * 60 * 1000);
+  db.run(`DELETE FROM connections WHERE connected_at < ?`, [oldConnections]);
+  
+  const oldNotifications = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  db.run(`DELETE FROM notifications WHERE created_at < ?`, [oldNotifications]);
+  
+  saveDb();
+  console.log(`[CLEANUP] Removed old expired vouchers`);
+}
+
+function scheduleAutoBackup() {
+  // Backup daily at 3 AM
+  const now = new Date();
+  const target = new Date();
+  target.setHours(3, 0, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  
+  const delay = target - now;
+  setTimeout(() => {
+    createBackup();
+    setInterval(createBackup, 24 * 60 * 60 * 1000);
+  }, delay);
+  
+  console.log(`[BACKUP] Scheduled daily backup`);
+}
+
+function scheduleAutoCleanup() {
+  // Cleanup daily at 4 AM
+  const now = new Date();
+  const target = new Date();
+  target.setHours(4, 0, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  
+  const delay = target - now;
+  setTimeout(() => {
+    cleanupExpiredVouchers();
+    setInterval(cleanupExpiredVouchers, 24 * 60 * 60 * 1000);
+  }, delay);
+  
+  console.log(`[CLEANUP] Scheduled daily cleanup`);
 }
 
 module.exports = {
@@ -395,7 +517,10 @@ module.exports = {
   getAllVouchers, getAdmin, updateAdminPassword, getVoucherCounts, getUnusedCounts,
   getWifiBatches, checkRateLimit, pruneRateLimits, buildDeviceId,
   setSleepMode, getSleepMode,
-  createNotification, getUnreadNotifications, markNotificationRead, clearOldNotifications,
-  trackConnection, markVoucherPaid, getConnectionTime, hasValidVoucher, cleanupOldConnections,
+  createNotification, getUnreadNotifications, markNotificationRead,
+  trackConnection, markVoucherPaid, getConnectionTime, hasValidVoucher,
+  refundVoucher, getRefundHistory,
+  createBackup, getBackups,
+  cleanupExpiredVouchers,
   queryOne, query, run,
 };
