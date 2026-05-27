@@ -32,7 +32,7 @@ app.use(session({
 app.use('/', require('./routes/customer'));
 app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
-app.use('/', require('./routes/notifications'));
+app.use('/', require('./routes/notification'));
 
 app.use((req, res) => {
   res.status(404).render('error', { title: 'Page Not Found', message: 'This page does not exist.' });
