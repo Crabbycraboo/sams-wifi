@@ -6,7 +6,7 @@ const { initDb, checkExpiredVouchers, pruneRateLimits } = require('./db/database
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.use('/', require('./routes/notifications'));
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -32,6 +32,7 @@ app.use(session({
 app.use('/', require('./routes/customer'));
 app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
+app.use('/', require('./routes/notifications'));
 
 app.use((req, res) => {
   res.status(404).render('error', { title: 'Page Not Found', message: 'This page does not exist.' });
