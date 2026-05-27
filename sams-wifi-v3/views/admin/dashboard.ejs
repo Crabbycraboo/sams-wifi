@@ -3,21 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
+  <title>Admin Dashboard</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="admin-body">
 
-<!-- Notification Panel -->
-<div id="notificationPanel" style="position: fixed; top: 20px; right: 20px; width: 350px; max-height: 400px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; overflow-y: auto; display: none;">
-  <div style="padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; color: #333;">
-    🔔 Notifications
-  </div>
-  <div id="notificationList"></div>
-</div>
-
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <div class="brand-title"><span>Sam's</span> WiFi</div>
@@ -27,9 +18,8 @@
     <div class="nav-section-label">Main</div>
     <a href="/admin" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a>
     <a href="/admin/vouchers" class="nav-link"><span class="nav-icon">🎫</span> Vouchers</a>
-
     <div class="nav-section-label" style="margin-top:12px;">Settings</div>
-    <a href="#change-password" class="nav-link" onclick="showPasswordModal()"><span class="nav-icon">🔑</span> Change Password</a>
+    <a href="#" class="nav-link" onclick="showPasswordModal(); return false;"><span class="nav-icon">🔑</span> Change Password</a>
     <a href="/" class="nav-link" target="_blank"><span class="nav-icon">🌐</span> Customer Portal</a>
   </nav>
   <div class="sidebar-footer">
@@ -42,204 +32,108 @@
   </div>
 </aside>
 
-<!-- Main -->
 <main class="admin-main">
   <div class="admin-topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <button class="btn btn-outline btn-sm no-print" id="menuBtn" onclick="toggleSidebar()" style="display:none;">☰</button>
-      <h1>Dashboard</h1>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-outline btn-sm" onclick="toggleNotificationPanel()" style="position: relative;">🔔 <span id="notifBadge" style="position: absolute; top: -8px; right: -8px; background: #ff6b6b; color: white; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;"></span></button>
-      <span style="font-size:0.8rem;color:var(--gray-400);" id="lastRefresh"></span>
-      <button class="btn btn-outline btn-sm" onclick="refreshData()">🔄 Refresh</button>
-    </div>
+    <h1>Dashboard</h1>
+    <button class="btn btn-outline btn-sm" onclick="refreshData()">🔄 Refresh</button>
   </div>
 
   <div class="admin-content">
 
-    <!-- ── Sleep Mode Toggle ─────────────────────────────────────────── -->
-    <div class="no-print" style="margin-bottom:20px;padding:16px 20px;background:<%= sleepMode ? 'rgba(251,191,36,0.1)' : 'rgba(255,255,255,0.04)' %>;border:1px solid <%= sleepMode ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.08)' %>;border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <!-- Sleep Mode -->
+    <div style="margin-bottom:20px;padding:16px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div>
-        <div style="font-weight:700;font-size:0.95rem;color:<%= sleepMode ? '#fcd34d' : 'var(--white)' %>;">
+        <div style="font-weight:700;font-size:0.95rem;color:var(--white);">
           <%= sleepMode ? '😴 Sleep Mode is ON' : '☀️ Sleep Mode is OFF' %>
         </div>
-        <div style="font-size:0.8rem;color:var(--gray-400);margin-top:2px;">
-          <%= sleepMode ? '₱2 vouchers blocked.' : 'All plans available.' %>
-        </div>
       </div>
-      <button
-        id="sleepToggleBtn"
-        onclick="toggleSleepMode()"
-        class="btn <%= sleepMode ? 'btn-warning' : 'btn-outline' %>"
-        style="min-width:140px;">
+      <button id="sleepToggleBtn" onclick="toggleSleepMode()" class="btn btn-outline" style="min-width:140px;">
         <%= sleepMode ? '☀️ Wake Up' : '😴 Go to Sleep' %>
       </button>
     </div>
 
-    <!-- ── Top Stats ─────────────────────────────────────────────────── -->
+    <!-- Stats -->
     <div class="grid-4" style="margin-bottom:24px;">
-      <div class="stat-card" style="--stat-color:var(--success);">
+      <div class="stat-card">
         <div class="stat-icon">👥</div>
         <div class="stat-label">Active Users</div>
-        <div class="stat-value" id="statActive"><%= activeUsers.length %></div>
-        <div class="stat-sub">Currently connected</div>
+        <div class="stat-value"><%= activeUsers.length %></div>
       </div>
-      <div class="stat-card" style="--stat-color:var(--blue-300);">
+      <div class="stat-card">
         <div class="stat-icon">💰</div>
         <div class="stat-label">Today's Sales</div>
         <div class="stat-value">₱<%= sales.todaySales.total %></div>
-        <div class="stat-sub"><%= sales.todaySales.count %> sessions today</div>
       </div>
-      <div class="stat-card" style="--stat-color:var(--accent);">
+      <div class="stat-card">
         <div class="stat-icon">🎫</div>
         <div class="stat-label">Unused Vouchers</div>
         <div class="stat-value"><%= (unusedCounts['5min'] || 0) + (unusedCounts['15min'] || 0) + (unusedCounts['30min'] || 0) + (unusedCounts['60min'] || 0) + (unusedCounts['3hrs'] || 0) %></div>
-        <div class="stat-sub">Ready to sell</div>
       </div>
-      <div class="stat-card" style="--stat-color:var(--warning);">
+      <div class="stat-card">
         <div class="stat-icon">📈</div>
         <div class="stat-label">Total Revenue</div>
         <div class="stat-value">₱<%= sales.totalSales.total %></div>
-        <div class="stat-sub"><%= sales.totalSales.count %> total sessions</div>
       </div>
     </div>
 
-    <!-- ── Load Recommendation ───────────────────────────────────────── -->
-    <div id="load-rec" class="load-rec-card no-print" style="margin-bottom:24px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h3>📶 Load Recommendation</h3>
-          <p style="font-size:0.85rem;color:var(--gray-400);margin-bottom:12px;">
-            Based on <%= activeUsers.length %> active users now
-          </p>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <div class="load-amount">₱<%= loadRec.recommendation.load %></div>
-            <div style="color:var(--gray-400);font-size:0.9rem;">for <strong style="color:var(--white);"><%= loadRec.recommendation.period %></strong></div>
+    <!-- Active Users -->
+    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
+      <h3>👥 Active Users</h3>
+      <% if (activeUsers.length === 0) { %>
+        <p style="color:var(--gray-400);text-align:center;padding:20px 0;">No active users.</p>
+      <% } else { %>
+        <div style="overflow-x:auto;">
+          <table class="users-table">
+            <thead>
+              <tr><th>Code</th><th>Plan</th><th>Remaining</th></tr>
+            </thead>
+            <tbody>
+              <% activeUsers.forEach(u => {
+                const mins = Math.floor((u.expires_at - Date.now()) / 60000);
+                const hrs = Math.floor(mins / 60);
+              %>
+              <tr>
+                <td><%= u.code %></td>
+                <td><%= u.plan %></td>
+                <td><%= hrs > 0 ? hrs + 'h ' + (mins % 60) + 'm' : mins + 'm' %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Sales -->
+    <div class="card" style="background:rgba(255,255,255,0.03);">
+      <h3>💰 Sales This Week</h3>
+      <p style="color:var(--gray-400);">₱<%= sales.weekSales.total %> — <%= sales.weekSales.count %> sessions</p>
+      <% if (sales.byPlan.length > 0) { %>
+        <% sales.byPlan.forEach(p => { %>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.85rem;">
+            <span><%= p.plan %></span>
+            <span style="color:var(--accent);">₱<%= p.revenue %> (<%= p.count %>x)</span>
           </div>
-        </div>
-      </div>
+        <% }) %>
+      <% } %>
     </div>
 
-    <!-- ── Active Users + Sales ──────────────────────────────────────── -->
-    <div class="grid-2" style="margin-bottom:24px;">
-
-      <!-- Active Users -->
-      <div id="active-users" class="card" style="background:rgba(255,255,255,0.03);">
-        <div class="flex-between" style="margin-bottom:16px;">
-          <h3>👥 Active Users</h3>
-          <span class="badge badge-active"><%= activeUsers.length %> online</span>
-        </div>
-        <% if (activeUsers.length === 0) { %>
-          <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">
-            No active users right now.
-          </p>
-        <% } else { %>
-          <div style="overflow-x:auto;">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Plan</th>
-                  <th>Remaining</th>
-                </tr>
-              </thead>
-              <tbody id="activeUsersBody">
-                <% activeUsers.forEach(u => {
-                  const msLeft = u.expires_at - Date.now();
-                  const minLeft = Math.floor(msLeft/60000);
-                  const timeClass = minLeft < 3 ? 'time-crit' : minLeft < 15 ? 'time-warn' : 'time-ok';
-                  const hrs = Math.floor(minLeft/60);
-                  const mins = minLeft % 60;
-                  const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-                %>
-                <tr>
-                  <td class="code-cell"><%= u.code %></td>
-                  <td><%= u.plan %></td>
-                  <td class="time-remaining <%= timeClass %>"><%= timeStr %></td>
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        <% } %>
-      </div>
-
-      <!-- Sales This Week -->
-      <div id="sales" class="card" style="background:rgba(255,255,255,0.03);">
-        <div class="flex-between" style="margin-bottom:4px;">
-          <h3>💰 Sales This Week</h3>
-          <span style="font-size:0.8rem;color:var(--gray-400);">7 days</span>
-        </div>
-        <p style="font-size:0.8rem;color:var(--gray-400);margin-bottom:12px;">₱<%= sales.weekSales.total %> — <%= sales.weekSales.count %> sessions</p>
-
-        <!-- By plan breakdown -->
-        <div style="margin-top:0;border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
-          <p style="font-size:0.75rem;color:var(--gray-400);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.07em;">By Plan</p>
-          <% sales.byPlan.forEach(p => { %>
-          <div class="flex-between" style="margin-bottom:8px;">
-            <span style="font-size:0.85rem;"><%= p.plan %></span>
-            <span style="font-size:0.85rem;color:var(--accent);font-family:var(--mono);">
-              ₱<%= p.revenue %> (<%= p.count %>x)
-            </span>
-          </div>
-          <% }) %>
-          <% if(sales.byPlan.length === 0) { %>
-            <p style="font-size:0.8rem;color:var(--gray-400);">No data yet.</p>
-          <% } %>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Refunds & Backups ─────────────────────────────────────────── -->
-    <div class="grid-2" style="margin-bottom:24px;">
-
-      <!-- Refunds -->
-      <div class="card" style="background:rgba(255,255,255,0.03);">
-        <div class="flex-between" style="margin-bottom:16px;">
-          <h3>💸 Refunds</h3>
-          <span class="badge" style="background:#ef4444;"><%= voucherCounts.refunded || 0 %> refunded</span>
-        </div>
-        
-        <div style="margin-bottom:16px;">
-          <input type="text" id="refundCode" placeholder="Enter voucher code" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--white);border-radius:var(--radius-sm);padding:8px 12px;width:100%;font-family:var(--font);margin-bottom:8px;">
-          <button class="btn btn-danger" onclick="processRefund()" style="width:100%;">🔄 Refund</button>
-        </div>
-        
-        <div id="refundMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
-      </div>
-
-      <!-- Backups -->
-      <div class="card" style="background:rgba(255,255,255,0.03);">
-        <div class="flex-between" style="margin-bottom:16px;">
-          <h3>💾 Database Backups</h3>
-          <button class="btn btn-outline btn-sm" onclick="createBackup()">🔄 Backup Now</button>
-        </div>
-        
-        <div id="backupMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
-      </div>
-
-    </div>
-
-  </div><!-- /admin-content -->
+  </div>
 </main>
 
-<!-- Change Password Modal -->
-<div id="pwModal" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.85);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center;padding:20px;">
+<!-- Password Modal -->
+<div id="pwModal" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.85);z-index:200;align-items:center;justify-content:center;padding:20px;">
   <div class="card" style="max-width:360px;width:100%;">
-    <h3 style="margin-bottom:16px;">🔑 Change Password</h3>
+    <h3>🔑 Change Password</h3>
     <div id="pwMsg" style="margin-bottom:12px;"></div>
-    <div class="form-group mb-2">
-      <label class="form-label">Current Password</label>
+    <div style="margin-bottom:12px;">
       <input type="password" id="pwCurrent" class="form-input" placeholder="Current password">
     </div>
-    <div class="form-group mb-2">
-      <label class="form-label">New Password</label>
-      <input type="password" id="pwNew" class="form-input" placeholder="New password (min 6 chars)">
+    <div style="margin-bottom:12px;">
+      <input type="password" id="pwNew" class="form-input" placeholder="New password">
     </div>
-    <div class="form-group" style="margin-bottom:16px;">
-      <label class="form-label">Confirm New Password</label>
-      <input type="password" id="pwConfirm" class="form-input" placeholder="Repeat new password">
+    <div style="margin-bottom:16px;">
+      <input type="password" id="pwConfirm" class="form-input" placeholder="Confirm password">
     </div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-primary" onclick="submitPassword()">Save</button>
@@ -249,175 +143,49 @@
 </div>
 
 <script>
-  document.getElementById('lastRefresh').textContent = 'Updated: ' + new Date().toLocaleTimeString('en-PH');
-
-  function refreshData() { window.location.reload(); }
-  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-
-  if (window.innerWidth <= 900) {
-    document.getElementById('menuBtn').style.display = 'block';
-  }
-
-  // ── Notifications ──────────────────────────────────────────────────
-  async function loadNotifications() {
-    try {
-      const res = await fetch('/api/notifications');
-      const notifs = await res.json();
-      
-      const list = document.getElementById('notificationList');
-      const badge = document.getElementById('notifBadge');
-      
-      if (!notifs || notifs.length === 0) {
-        list.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No notifications</div>';
-        badge.style.display = 'none';
-        return;
-      }
-
-      badge.style.display = 'flex';
-      badge.textContent = notifs.length;
-
-      list.innerHTML = notifs.map(n => `
-        <div style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333;">
-          <div style="font-weight: 600; margin-bottom: 5px;">
-            ${n.type === 'sale' ? '💰' : '🚨'} ${n.message}
-          </div>
-          <div style="color: #999; font-size: 12px;">
-            ${new Date(n.created_at).toLocaleTimeString()}
-          </div>
-        </div>
-      `).join('');
-    } catch(e) {
-      console.warn('Notifications failed:', e);
-    }
-  }
-
-  function toggleNotificationPanel() {
-    const panel = document.getElementById('notificationPanel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  }
-
-  if (Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-
-  loadNotifications();
-  setInterval(loadNotifications, 10000);
-
-  // ── Password modal ──────────────────────────────────────────────────
-  function showPasswordModal() {
-    document.getElementById('pwModal').style.display = 'flex';
-  }
-  function hidePasswordModal() {
-    document.getElementById('pwModal').style.display = 'none';
-    document.getElementById('pwMsg').innerHTML = '';
-    ['pwCurrent','pwNew','pwConfirm'].forEach(id => document.getElementById(id).value = '');
-  }
+  function refreshData() { location.reload(); }
+  
+  function showPasswordModal() { document.getElementById('pwModal').style.display = 'flex'; }
+  function hidePasswordModal() { document.getElementById('pwModal').style.display = 'none'; }
 
   async function submitPassword() {
-    const current  = document.getElementById('pwCurrent').value;
-    const newpass  = document.getElementById('pwNew').value;
-    const confirm  = document.getElementById('pwConfirm').value;
-    const msgEl    = document.getElementById('pwMsg');
+    const current = document.getElementById('pwCurrent').value;
+    const newpass = document.getElementById('pwNew').value;
+    const confirm = document.getElementById('pwConfirm').value;
+    const msgEl = document.getElementById('pwMsg');
 
     try {
-      const res  = await fetch('/admin/change-password', {
+      const res = await fetch('/admin/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `current=${encodeURIComponent(current)}&newpass=${encodeURIComponent(newpass)}&confirm=${encodeURIComponent(confirm)}`
       });
       const data = await res.json();
-
       if (data.success) {
-        msgEl.innerHTML = '<div style="padding:10px;background:#4ade80;color:white;border-radius:6px;">✅ Password changed!</div>';
-        setTimeout(hidePasswordModal, 2000);
+        msgEl.innerHTML = '<div style="color:#4ade80;">✅ Changed!</div>';
+        setTimeout(hidePasswordModal, 1500);
       } else {
-        msgEl.innerHTML = `<div style="padding:10px;background:#ef4444;color:white;border-radius:6px;">⚠️ ${data.error}</div>`;
+        msgEl.innerHTML = `<div style="color:#ef4444;">❌ ${data.error}</div>`;
       }
     } catch(e) {
-      msgEl.innerHTML = `<div style="padding:10px;background:#ef4444;color:white;border-radius:6px;">❌ Error</div>`;
+      msgEl.innerHTML = '<div style="color:#ef4444;">❌ Error</div>';
     }
   }
 
   async function toggleSleepMode() {
     const btn = document.getElementById('sleepToggleBtn');
-    const currentlyAsleep = btn.textContent.includes('Wake Up');
     btn.disabled = true;
-    btn.textContent = '⏳ Updating...';
     try {
-      const res = await fetch('/admin/sleep-mode', {
+      await fetch('/admin/sleep-mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `enabled=${!currentlyAsleep}`
+        body: `enabled=${<%= sleepMode %> ? 'false' : 'true'}`
       });
-      const data = await res.json();
-      if (data.success) window.location.reload();
+      location.reload();
     } catch(e) {
       btn.disabled = false;
-      btn.textContent = currentlyAsleep ? '☀️ Wake Up' : '😴 Go to Sleep';
     }
   }
-
-  // ── Refund Processing ──────────────────────────────────────────────
-  async function processRefund() {
-    const code = document.getElementById('refundCode').value.trim();
-    const msgEl = document.getElementById('refundMsg');
-    
-    if (!code) {
-      msgEl.innerHTML = '<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">⚠️ Enter a code</div>';
-      return;
-    }
-
-    msgEl.innerHTML = '<div style="color:var(--gray-400);">⏳ Processing...</div>';
-
-    try {
-      const res = await fetch('/api/admin/refund', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `code=${encodeURIComponent(code)}`
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        msgEl.innerHTML = `<div style="padding:8px;background:#4ade80;color:white;border-radius:6px;">✅ Refunded ₱${data.refunded_amount}</div>`;
-        document.getElementById('refundCode').value = '';
-        setTimeout(() => window.location.reload(), 2000);
-      } else {
-        msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ ${data.error}</div>`;
-      }
-    } catch(e) {
-      msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ Error</div>`;
-    }
-  }
-
-  // ── Backup Creation ────────────────────────────────────────────────
-  async function createBackup() {
-    const msgEl = document.getElementById('backupMsg');
-    msgEl.innerHTML = '<div style="color:var(--gray-400);">⏳ Creating...</div>';
-
-    try {
-      const res = await fetch('/api/admin/backup', {
-        method: 'POST'
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        msgEl.innerHTML = `<div style="padding:8px;background:#4ade80;color:white;border-radius:6px;">✅ Backup created</div>`;
-        setTimeout(() => window.location.reload(), 2000);
-      } else {
-        msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ ${data.error}</div>`;
-      }
-    } catch(e) {
-      msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ Error</div>`;
-    }
-  }
-
-  setInterval(async () => {
-    try {
-      const res  = await fetch('/api/admin/active-users');
-      const data = await res.json();
-      document.getElementById('statActive').textContent = data.length;
-    } catch(e) {}
-  }, 60000);
 </script>
 </body>
 </html>
