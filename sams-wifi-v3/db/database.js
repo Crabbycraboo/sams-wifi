@@ -109,12 +109,13 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── PLANS ───────────────────────────────────────────────────────────────────
+// ─── PLANS — Consistent ₱0.40/minute ────────────────────────────────────────
 const PLANS = [
-  { id: 1, name: '₱5 / 15 min', price: 5, duration_ms: 15 * 60 * 1000 },
-  { id: 2, name: '₱10 / 30 min', price: 10, duration_ms: 30 * 60 * 1000 },
-  { id: 3, name: '₱20 / 60 min', price: 20, duration_ms: 60 * 60 * 1000 },
-  { id: 4, name: '₱60 / 3 hrs', price: 60, duration_ms: 3 * 60 * 60 * 1000 }
+  { id: 1, name: '₱2 / 5 min',   price: 2,  duration_ms: 5 * 60 * 1000 },
+  { id: 2, name: '₱5 / 15 min',  price: 5,  duration_ms: 15 * 60 * 1000 },
+  { id: 3, name: '₱10 / 30 min', price: 10, duration_ms: 30 * 60 * 1000 },
+  { id: 4, name: '₱20 / 60 min', price: 20, duration_ms: 60 * 60 * 1000 },
+  { id: 5, name: '₱60 / 3 hrs',  price: 60, duration_ms: 3 * 60 * 60 * 1000 }
 ];
 
 // ─── Rate limiting ───────────────────────────────────────────────────────────
@@ -297,6 +298,7 @@ function getVoucherCounts() {
 
 function getUnusedCounts() {
   return {
+    '5min':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='5min'`) || {c:0}).c,
     '15min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='15min'`) || {c:0}).c,
     '30min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='30min'`) || {c:0}).c,
     '60min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='60min'`) || {c:0}).c,
