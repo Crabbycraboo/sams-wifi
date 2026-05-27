@@ -56,7 +56,8 @@ router.post('/connect', (req, res) => {
       code: code.toUpperCase()
     });
   }
-
+const { createNotification } = require('../db/database');
+  
   // Sleep mode: block ₱5 / 30min vouchers
   if (sleepMode && result.voucher.plan === '30min') {
     return res.render('login', {
@@ -77,7 +78,11 @@ router.post('/connect', (req, res) => {
 
   res.redirect('/portal');
 });
-
+createNotification('sale', `New sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
+  code: result.voucher.code,
+  price: result.voucher.price,
+  plan: result.voucher.plan
+});
 // ─── Portal ───────────────────────────────────────────────────────────────────
 router.get('/portal', (req, res) => {
   if (!req.session.voucher) return res.redirect('/');
