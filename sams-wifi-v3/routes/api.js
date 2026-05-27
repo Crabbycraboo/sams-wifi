@@ -63,4 +63,48 @@ router.get('/admin/active-users', (req, res) => {
   res.json(getActiveUsers());
 });
 
+// Add these endpoints to routes/api.js
+
+// ─── Refund Voucher ──────────────────────────────────────────────────────────
+router.post('/admin/refund', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  const { code } = req.body;
+  const { refundVoucher } = require('../db/database');
+  
+  const result = refundVoucher(code);
+  if (result.success) {
+    res.json({ success: true, refunded_amount: result.refunded_amount });
+  } else {
+    res.json({ success: false, error: result.error });
+  }
+});
+
+// ─── Get Refund History ──────────────────────────────────────────────────────
+router.get('/admin/refunds', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  const { getRefundHistory } = require('../db/database');
+  const refunds = getRefundHistory();
+  res.json(refunds);
+});
+
+// ─── Get Backups ────────────────────────────────────────────────────────────
+router.get('/admin/backups', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  const { getBackups } = require('../db/database');
+  const backups = getBackups();
+  res.json(backups);
+});
+
+// ─── Create Manual Backup ───────────────────────────────────────────────────
+router.post('/admin/backup', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  const { createBackup } = require('../db/database');
+  const result = createBackup();
+  res.json(result);
+});
+
 module.exports = router;
