@@ -1,10 +1,48 @@
-// routes/admin.js — dashboard route only
+// routes/admin.js — complete admin routes
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { getAdmin, updateAdminPassword, getActiveUsers, getSalesStats, getLoadRecommendation, getVoucherCounts, getUnusedCounts, getSleepMode, setSleepMode, query } = require('../db/database');
+const { 
+  getAdmin, updateAdminPassword, getActiveUsers, getSalesStats, 
+  getLoadRecommendation, getVoucherCounts, getUnusedCounts, getSleepMode, setSleepMode, 
+  query, generateVouchers, refundVoucher, getRefundHistory, getBackups
+} = require('../db/database');
 
-// ─── Dashboard ───────────────────────────────────────────────────────────────
+// ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
+router.get('/login', (req, res) => {
+  if (req.session.isAdmin) return res.redirect('/admin');
+  res.render('admin/login', { title: 'Admin Login', error: null });
+});
+
+// ─── LOGIN SUBMIT ─────────────────────────────────────────────────────────────
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+
+  // Rate limit
+  const { checkRateLimit } = require('../db/database');
+  const rateCheck = checkRateLimit(ip, 'admin_login');
+  if (!rateCheck.allowed) {
+    return res.render('admin/login', {
+      title: 'Admin Login',
+      error: `Too many attempts. Please wait ${rateCheck.retryMins} minute(s).`
+    });
+  }
+
+  const admin = getAdmin(username);
+  if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
+    return res.render('admin/login', {
+      title: 'Admin Login',
+      error: 'Invalid username or password.'
+    });
+  }
+
+  req.session.isAdmin = true;
+  req.session.adminUser = username;
+  res.redirect('/admin');
+});
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
   if (!req.session.isAdmin) return res.redirect('/admin/login');
   
@@ -39,7 +77,7 @@ router.get('/', (req, res) => {
   });
 });
 
-// ─── Sleep Mode Toggle ───────────────────────────────────────────────────────
+// ─── SLEEP MODE TOGGLE ────────────────────────────────────────────────────────
 router.post('/sleep-mode', (req, res) => {
   if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
   const enabled = req.body.enabled === 'true';
@@ -47,7 +85,7 @@ router.post('/sleep-mode', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── Change Password ─────────────────────────────────────────────────────────
+// ─── CHANGE PASSWORD ──────────────────────────────────────────────────────────
 router.post('/change-password', (req, res) => {
   if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
   
@@ -69,7 +107,48 @@ router.post('/change-password', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── Logout ──────────────────────────────────────────────────────────────────
+// ─── VOUCHERS PAGE ────────────────────────────────────────────────────────────
+router.get('/vouchers', (req, res) => {
+  if (!req.session.isAdmin) return res.redirect('/admin/login');
+  
+  const { getAllVouchers } = require('../db/database');
+  const status = req.query.status || 'all';
+  const page = parseInt(req.query.page) || 1;
+  
+  const vouchers = getAllVouchers({ status, page });
+  const counts = getVoucherCounts();
+  
+  res.render('admin/vouchers', {
+    title: 'Vouchers',
+    adminUser: req.session.adminUser,
+    vouchers,
+    counts,
+    currentStatus: status,
+    currentPage: page
+  });
+});
+
+// ─── GENERATE VOUCHERS ────────────────────────────────────────────────────────
+router.post('/vouchers/generate', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  const { plan, count } = req.body;
+  const batchId = `batch-${Date.now()}`;
+  
+  try {
+    const result = generateVouchers(plan, parseInt(count), batchId, false);
+    res.json({
+      success: true,
+      codes: result.codes,
+      count: result.codes.length,
+      batchId
+    });
+  } catch(e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// ─── LOGOUT ───────────────────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
   req.session.destroy();
   res.redirect('/admin/login');
