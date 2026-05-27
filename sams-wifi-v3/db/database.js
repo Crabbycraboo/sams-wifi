@@ -1,4 +1,4 @@
-// db/database.js — hardened version with rate limiting + wifi password batches
+// db/database.js — with free trial tracking + notifications
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
@@ -75,6 +75,22 @@ async function initDb() {
   db.run(`CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    data TEXT,
+    read INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS connections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mac TEXT NOT NULL,
+    connected_at INTEGER NOT NULL,
+    has_voucher INTEGER DEFAULT 0
   )`);
 
   const adminRows = db.exec(`SELECT id FROM admin_users WHERE username = 'admin'`);
@@ -324,17 +340,9 @@ function getSleepMode() {
     return row ? row.value === '1' : false;
   } catch(e) { return false; }
 }
+
 // ─── Notifications ───────────────────────────────────────────────────────────
 function createNotification(type, message, data = {}) {
-  run(`CREATE TABLE IF NOT EXISTS notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    message TEXT NOT NULL,
-    data TEXT,
-    read INTEGER DEFAULT 0,
-    created_at INTEGER NOT NULL
-  )`);
-  
   run(`INSERT INTO notifications (type, message, data, created_at) VALUES (?, ?, ?, ?)`,
     [type, message, JSON.stringify(data), Date.now()]);
 }
@@ -348,19 +356,12 @@ function markNotificationRead(id) {
 }
 
 function clearOldNotifications() {
-  const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   run(`DELETE FROM notifications WHERE created_at < ?`, [cutoff]);
 }
-// ─── Free Trial Tracking ─────────────────────────────────────────────
+
+// ─── Free Trial Tracking ─────────────────────────────────────────────────────
 function trackConnection(mac) {
-  run(`CREATE TABLE IF NOT EXISTS connections (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mac TEXT NOT NULL,
-    connected_at INTEGER NOT NULL,
-    has_voucher INTEGER DEFAULT 0
-  )`);
-  
-  // Check if this MAC already has an active entry
   const existing = queryOne(`SELECT id FROM connections WHERE mac=? AND has_voucher=0`, [mac]);
   if (!existing) {
     run(`INSERT INTO connections (mac, connected_at, has_voucher) VALUES (?, ?, 0)`,
@@ -374,7 +375,7 @@ function markVoucherPaid(mac) {
 
 function getConnectionTime(mac) {
   const conn = queryOne(`SELECT connected_at FROM connections WHERE mac=?`, [mac]);
-  return conn ? Math.floor((Date.now() - conn.connected_at) / 1000 / 60) : 0; // returns minutes
+  return conn ? Math.floor((Date.now() - conn.connected_at) / 1000 / 60) : 0;
 }
 
 function hasValidVoucher(mac) {
@@ -386,12 +387,15 @@ function cleanupOldConnections() {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   run(`DELETE FROM connections WHERE connected_at < ?`, [cutoff]);
 }
+
 module.exports = {
-  initDb, PLANS,createNotification, getUnreadNotifications, markNotificationRead, clearOldNotifications,trackConnection, markVoucherPaid, getConnectionTime, hasValidVoucher, cleanupOldConnections,
+  initDb, PLANS,
   generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
   getActiveUsers, getSalesStats, getLoadRecommendation,
   getAllVouchers, getAdmin, updateAdminPassword, getVoucherCounts, getUnusedCounts,
   getWifiBatches, checkRateLimit, pruneRateLimits, buildDeviceId,
   setSleepMode, getSleepMode,
+  createNotification, getUnreadNotifications, markNotificationRead, clearOldNotifications,
+  trackConnection, markVoucherPaid, getConnectionTime, hasValidVoucher, cleanupOldConnections,
   queryOne, query, run,
 };
