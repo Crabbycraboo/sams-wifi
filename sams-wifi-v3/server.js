@@ -6,7 +6,7 @@ const { initDb, checkExpiredVouchers, pruneRateLimits } = require('./db/database
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+app.use('/', require('./routes/notifications'));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
