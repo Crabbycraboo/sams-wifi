@@ -28,11 +28,6 @@
     <a href="/admin" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a>
     <a href="/admin/vouchers" class="nav-link"><span class="nav-icon">🎫</span> Vouchers</a>
 
-    <div class="nav-section-label" style="margin-top:12px;">Tools</div>
-    <a href="#load-rec" class="nav-link"><span class="nav-icon">📶</span> Load Recommendation</a>
-    <a href="#sales" class="nav-link"><span class="nav-icon">💰</span> Sales Tracker</a>
-    <a href="#active-users" class="nav-link"><span class="nav-icon">👥</span> Active Users</a>
-
     <div class="nav-section-label" style="margin-top:12px;">Settings</div>
     <a href="#change-password" class="nav-link" onclick="showPasswordModal()"><span class="nav-icon">🔑</span> Change Password</a>
     <a href="/" class="nav-link" target="_blank"><span class="nav-icon">🌐</span> Customer Portal</a>
@@ -70,7 +65,7 @@
           <%= sleepMode ? '😴 Sleep Mode is ON' : '☀️ Sleep Mode is OFF' %>
         </div>
         <div style="font-size:0.8rem;color:var(--gray-400);margin-top:2px;">
-          <%= sleepMode ? '₱2 vouchers blocked. GCash QR shown to customers.' : 'All plans available. Customers paying cash.' %>
+          <%= sleepMode ? '₱2 vouchers blocked.' : 'All plans available.' %>
         </div>
       </div>
       <button
@@ -99,7 +94,7 @@
       <div class="stat-card" style="--stat-color:var(--accent);">
         <div class="stat-icon">🎫</div>
         <div class="stat-label">Unused Vouchers</div>
-        <div class="stat-value"><%= unusedCounts['5min'] + unusedCounts['15min'] + unusedCounts['30min'] + unusedCounts['60min'] + unusedCounts['3hrs'] %></div>
+        <div class="stat-value"><%= (unusedCounts['5min'] || 0) + (unusedCounts['15min'] || 0) + (unusedCounts['30min'] || 0) + (unusedCounts['60min'] || 0) + (unusedCounts['3hrs'] || 0) %></div>
         <div class="stat-sub">Ready to sell</div>
       </div>
       <div class="stat-card" style="--stat-color:var(--warning);">
@@ -114,29 +109,20 @@
     <div id="load-rec" class="load-rec-card no-print" style="margin-bottom:24px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h3>📶 Load Recommendation / Rekomendasyon ng Load</h3>
+          <h3>📶 Load Recommendation</h3>
           <p style="font-size:0.85rem;color:var(--gray-400);margin-bottom:12px;">
-            Batay sa <%= activeUsers.length %> aktibong users ngayon / Based on <%= activeUsers.length %> active users now
+            Based on <%= activeUsers.length %> active users now
           </p>
           <div style="display:flex;align-items:baseline;gap:8px;">
             <div class="load-amount">₱<%= loadRec.recommendation.load %></div>
-            <div style="color:var(--gray-400);font-size:0.9rem;">para sa / for <strong style="color:var(--white);"><%= loadRec.recommendation.period %></strong></div>
+            <div style="color:var(--gray-400);font-size:0.9rem;">for <strong style="color:var(--white);"><%= loadRec.recommendation.period %></strong></div>
           </div>
-          <p style="font-size:0.8rem;color:var(--blue-200);margin-top:8px;">
-            <% if(loadRec.recommendation.class === 'low') { %>
-              💡 Mababa ang traffic — ₱50 load ay sapat na. (Low traffic — ₱50 is enough.)
-            <% } else if(loadRec.recommendation.class === 'medium') { %>
-              ⚡ Katamtamang traffic — mag-load ng ₱85. (Medium traffic — load ₱85.)
-            <% } else { %>
-              🔥 Mataas ang traffic — mag-load ng ₱200! (High traffic — load ₱200!)
-            <% } %>
-          </p>
         </div>
       </div>
     </div>
 
-    <!-- ── Three column: Active Users + Non-Payers + Sales ──────────── -->
-    <div class="grid-3" style="margin-bottom:24px;">
+    <!-- ── Active Users + Sales ──────────────────────────────────────── -->
+    <div class="grid-2" style="margin-bottom:24px;">
 
       <!-- Active Users -->
       <div id="active-users" class="card" style="background:rgba(255,255,255,0.03);">
@@ -146,7 +132,7 @@
         </div>
         <% if (activeUsers.length === 0) { %>
           <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">
-            Walang aktibong user ngayon.<br><small>No active users right now.</small>
+            No active users right now.
           </p>
         <% } else { %>
           <div style="overflow-x:auto;">
@@ -171,45 +157,6 @@
                   <td class="code-cell"><%= u.code %></td>
                   <td><%= u.plan %></td>
                   <td class="time-remaining <%= timeClass %>"><%= timeStr %></td>
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        <% } %>
-      </div>
-
-      <!-- Non-Payers -->
-      <div id="non-payers" class="card" style="background:rgba(255,255,255,0.03);">
-        <div class="flex-between" style="margin-bottom:16px;">
-          <h3>⏰ Free Trial</h3>
-          <span class="badge" style="background:#ff6b6b;"><%= nonPayers.length %> users</span>
-        </div>
-        <% if (nonPayers.length === 0) { %>
-          <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">
-            Lahat ay nagbayad na!<br><small>Everyone has paid!</small>
-          </p>
-        <% } else { %>
-          <div style="overflow-x:auto;">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>MAC</th>
-                  <th>Connected</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% nonPayers.forEach(u => {
-                  const timeLeft = 5 - u.minutes_connected;
-                  const isExpired = timeLeft <= 0;
-                %>
-                <tr>
-                  <td style="font-family:var(--mono);font-size:0.75rem;"><%= u.mac.substring(0, 8) %>...</td>
-                  <td style="font-size:0.85rem;"><%= u.minutes_connected %>m</td>
-                  <td style="<%= isExpired ? 'color:#ff6b6b;font-weight:600;' : 'color:#fcd34d;' %>">
-                    <%= isExpired ? '❌ BLKD' : `⏳ ${timeLeft}m` %>
-                  </td>
                 </tr>
                 <% }) %>
               </tbody>
@@ -320,8 +267,8 @@
       const list = document.getElementById('notificationList');
       const badge = document.getElementById('notifBadge');
       
-      if (notifs.length === 0) {
-        list.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No new notifications</div>';
+      if (!notifs || notifs.length === 0) {
+        list.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No notifications</div>';
         badge.style.display = 'none';
         return;
       }
@@ -332,20 +279,15 @@
       list.innerHTML = notifs.map(n => `
         <div style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333;">
           <div style="font-weight: 600; margin-bottom: 5px;">
-            ${n.type === 'sale' ? '💰' : n.type === 'expiring' ? '⏱️' : '🚨'} ${n.message}
+            ${n.type === 'sale' ? '💰' : '🚨'} ${n.message}
           </div>
           <div style="color: #999; font-size: 12px;">
             ${new Date(n.created_at).toLocaleTimeString()}
           </div>
         </div>
       `).join('');
-
-      if (notifs.length > 0 && Notification.permission === 'granted') {
-        const first = notifs[0];
-        new Notification('Sam WiFi', { body: first.message });
-      }
     } catch(e) {
-      console.error('Notification fetch failed:', e);
+      console.warn('Notifications failed:', e);
     }
   }
 
@@ -377,18 +319,22 @@
     const confirm  = document.getElementById('pwConfirm').value;
     const msgEl    = document.getElementById('pwMsg');
 
-    const res  = await fetch('/admin/change-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `current=${encodeURIComponent(current)}&newpass=${encodeURIComponent(newpass)}&confirm=${encodeURIComponent(confirm)}`
-    });
-    const data = await res.json();
+    try {
+      const res  = await fetch('/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `current=${encodeURIComponent(current)}&newpass=${encodeURIComponent(newpass)}&confirm=${encodeURIComponent(confirm)}`
+      });
+      const data = await res.json();
 
-    if (data.success) {
-      msgEl.innerHTML = '<div style="padding:10px;background:#4ade80;color:white;border-radius:6px;">✅ Password changed successfully!</div>';
-      setTimeout(hidePasswordModal, 2000);
-    } else {
-      msgEl.innerHTML = `<div style="padding:10px;background:#ef4444;color:white;border-radius:6px;">⚠️ ${data.error}</div>`;
+      if (data.success) {
+        msgEl.innerHTML = '<div style="padding:10px;background:#4ade80;color:white;border-radius:6px;">✅ Password changed!</div>';
+        setTimeout(hidePasswordModal, 2000);
+      } else {
+        msgEl.innerHTML = `<div style="padding:10px;background:#ef4444;color:white;border-radius:6px;">⚠️ ${data.error}</div>`;
+      }
+    } catch(e) {
+      msgEl.innerHTML = `<div style="padding:10px;background:#ef4444;color:white;border-radius:6px;">❌ Error</div>`;
     }
   }
 
@@ -408,7 +354,6 @@
     } catch(e) {
       btn.disabled = false;
       btn.textContent = currentlyAsleep ? '☀️ Wake Up' : '😴 Go to Sleep';
-      alert('Failed to update sleep mode. Try again.');
     }
   }
 
@@ -418,7 +363,7 @@
     const msgEl = document.getElementById('refundMsg');
     
     if (!code) {
-      msgEl.innerHTML = '<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">⚠️ Enter a voucher code</div>';
+      msgEl.innerHTML = '<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">⚠️ Enter a code</div>';
       return;
     }
 
@@ -440,14 +385,14 @@
         msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ ${data.error}</div>`;
       }
     } catch(e) {
-      msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ Error: ${e.message}</div>`;
+      msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ Error</div>`;
     }
   }
 
   // ── Backup Creation ────────────────────────────────────────────────
   async function createBackup() {
     const msgEl = document.getElementById('backupMsg');
-    msgEl.innerHTML = '<div style="color:var(--gray-400);">⏳ Creating backup...</div>';
+    msgEl.innerHTML = '<div style="color:var(--gray-400);">⏳ Creating...</div>';
 
     try {
       const res = await fetch('/api/admin/backup', {
@@ -456,13 +401,13 @@
       const data = await res.json();
 
       if (data.success) {
-        msgEl.innerHTML = `<div style="padding:8px;background:#4ade80;color:white;border-radius:6px;">✅ Backup created: ${data.filename}</div>`;
+        msgEl.innerHTML = `<div style="padding:8px;background:#4ade80;color:white;border-radius:6px;">✅ Backup created</div>`;
         setTimeout(() => window.location.reload(), 2000);
       } else {
         msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ ${data.error}</div>`;
       }
     } catch(e) {
-      msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ Error: ${e.message}</div>`;
+      msgEl.innerHTML = `<div style="padding:8px;background:#ef4444;color:white;border-radius:6px;">❌ Error</div>`;
     }
   }
 
@@ -471,7 +416,6 @@
       const res  = await fetch('/api/admin/active-users');
       const data = await res.json();
       document.getElementById('statActive').textContent = data.length;
-      document.getElementById('lastRefresh').textContent = 'Updated: ' + new Date().toLocaleTimeString('en-PH');
     } catch(e) {}
   }, 60000);
 </script>
