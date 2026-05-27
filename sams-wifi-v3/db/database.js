@@ -324,9 +324,35 @@ function getSleepMode() {
     return row ? row.value === '1' : false;
   } catch(e) { return false; }
 }
+// ─── Notifications ───────────────────────────────────────────────────────────
+function createNotification(type, message, data = {}) {
+  run(`CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    data TEXT,
+    read INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL
+  )`);
+  
+  run(`INSERT INTO notifications (type, message, data, created_at) VALUES (?, ?, ?, ?)`,
+    [type, message, JSON.stringify(data), Date.now()]);
+}
 
+function getUnreadNotifications() {
+  return query(`SELECT * FROM notifications WHERE read=0 ORDER BY created_at DESC LIMIT 20`);
+}
+
+function markNotificationRead(id) {
+  run(`UPDATE notifications SET read=1 WHERE id=?`, [id]);
+}
+
+function clearOldNotifications() {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+  run(`DELETE FROM notifications WHERE created_at < ?`, [cutoff]);
+}
 module.exports = {
-  initDb, PLANS,
+  initDb, PLANS,createNotification, getUnreadNotifications, markNotificationRead, clearOldNotifications,
   generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
   getActiveUsers, getSalesStats, getLoadRecommendation,
   getAllVouchers, getAdmin, updateAdminPassword, getVoucherCounts, getUnusedCounts,
