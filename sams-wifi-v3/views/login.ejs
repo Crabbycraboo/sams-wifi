@@ -5,378 +5,233 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/admin.css">
   <style>
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-
-    .login-wrapper {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 480px;
-    }
-
-    .brand {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .brand-logo {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 8px;
-    }
-    .brand-icon {
-      width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--blue-400), var(--accent));
+    .login-container {
+      max-width: 600px;
+      margin: 60px auto 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      box-shadow: 0 8px 32px rgba(37,99,184,0.4);
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    .brand-name { font-size: 2rem; font-weight: 800; line-height: 1; }
-    .brand-name span { color: var(--accent); }
-    .brand-tagline { color: var(--gray-400); font-size: 0.9rem; margin-top: 4px; }
 
-    /* Price cards */
-    .prices-section { margin-bottom: 28px; }
-    .prices-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gray-400);
+    .login-title {
       text-align: center;
-      margin-bottom: 12px;
-    }
-    .price-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .price-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-sm);
-      padding: 14px 10px;
-      text-align: center;
-      cursor: default;
-      transition: all 0.2s;
-    }
-    .price-card:hover {
-      border-color: var(--blue-400);
-      background: rgba(37,99,184,0.1);
-    }
-    .price-card.unli-card {
-      grid-column: 1 / -1;
-      background: rgba(251,191,36,0.06);
-      border-color: rgba(251,191,36,0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 14px 20px;
-    }
-    .price-card.unli-card:hover {
-      border-color: rgba(251,191,36,0.5);
-      background: rgba(251,191,36,0.1);
-    }
-    .price-card.unli-card .price-amount { color: #fcd34d; }
-    .price-card.unli-card .unli-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      background: rgba(251,191,36,0.2);
-      color: #fcd34d;
-      border-radius: 20px;
-      padding: 2px 8px;
-      letter-spacing: 0.05em;
-    }
-    .price-card .price-amount {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--accent);
-      line-height: 1;
-      font-family: var(--mono);
-    }
-    .price-card .price-peso { font-size: 0.9rem; }
-    .price-card .price-duration {
-      font-size: 0.8rem;
-      color: var(--gray-400);
-      margin-top: 4px;
-      font-weight: 500;
-    }
-    .price-card .price-label-fil {
-      font-size: 0.7rem;
-      color: var(--blue-200);
-      margin-top: 2px;
-      opacity: 0.7;
+      margin-bottom: 30px;
     }
 
-    /* Login card */
-    .login-card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: var(--radius);
-      padding: 32px;
-      backdrop-filter: blur(20px);
-      box-shadow: var(--shadow-lg);
-    }
-    .login-card h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: var(--white);
-    }
-    .login-card h2 .subtitle {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: var(--gray-400);
-      margin-top: 2px;
+    .login-title h1 {
+      font-size: 32px;
+      margin: 0;
+      color: white;
     }
 
-    .code-hint {
-      font-size: 0.8rem;
-      color: var(--gray-400);
+    .login-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
       margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
-    .code-hint strong { color: var(--blue-200); font-family: var(--mono); }
 
-    .footer-note {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 0.8rem;
-      color: var(--gray-400);
-      line-height: 1.7;
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 30px;
     }
-    .footer-note a { color: var(--blue-300); text-decoration: none; }
 
-    /* Sleep mode */
-    .sleep-banner {
-      background: rgba(251,191,36,0.1);
-      border: 1px solid rgba(251,191,36,0.35);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: #fcd34d;
-      margin-bottom: 16px;
-      font-weight: 600;
-    }
-    .gcash-card {
-      background: rgba(0,130,65,0.1);
-      border: 1px solid rgba(0,180,90,0.3);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 20px;
+    .plan-card {
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 16px;
       text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: white;
     }
-    .gcash-card .gcash-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+
+    .plan-card:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.6);
+      transform: translateY(-2px);
+    }
+
+    .plan-card.active {
+      background: rgba(255,255,255,0.3);
+      border-color: white;
+      box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+    }
+
+    .plan-price {
+      font-size: 24px;
+      font-weight: bold;
       margin-bottom: 4px;
     }
-    .gcash-card .gcash-title {
-      font-size: 1rem;
-      font-weight: 800;
-      color: #4ade80;
+
+    .plan-duration {
+      font-size: 12px;
+      opacity: 0.9;
     }
-    .gcash-card .gcash-name {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--white);
-      margin: 6px 0 2px;
+
+    .form-group {
+      margin-bottom: 20px;
     }
-    .gcash-card .gcash-number {
-      font-family: var(--mono);
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #4ade80;
-      letter-spacing: 0.08em;
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 8px;
+      font-weight: 500;
     }
-    .gcash-qr {
-      width: 160px;
-      height: 160px;
-      margin: 12px auto;
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255,255,255,0.95);
+      color: #333;
+      box-sizing: border-box;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .form-input::placeholder {
+      color: #999;
+    }
+
+    .btn-connect {
+      width: 100%;
+      padding: 14px;
       background: white;
-      border-radius: 10px;
-      padding: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      color: #667eea;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
     }
-    .gcash-qr img { width: 100%; height: 100%; object-fit: contain; }
-    .gcash-steps {
-      font-size: 0.78rem;
-      color: var(--gray-400);
-      line-height: 1.8;
-      margin-top: 10px;
-      text-align: left;
+
+    .btn-connect:hover {
+      background: #f0f0f0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255,255,255,0.3);
     }
-    .plan-restricted {
-      opacity: 0.35;
-      pointer-events: none;
-      position: relative;
+
+    .error-alert {
+      background: #ff6b6b;
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
     }
-    .plan-restricted::after {
-      content: '😴';
-      position: absolute;
-      top: 4px; right: 4px;
-      font-size: 0.7rem;
+
+    .gcash-section {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 24px;
+      text-align: center;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .gcash-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+
+    .gcash-number {
+      font-size: 20px;
+      font-weight: bold;
+      font-family: 'JetBrains Mono', monospace;
+      margin: 8px 0;
+    }
+
+    .gcash-name {
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 12px;
+      text-align: center;
     }
   </style>
 </head>
-<body>
-  <div class="bg-network"></div>
+<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; margin: 0;">
 
-  <div class="login-wrapper">
-    <% if (sleepMode) { %>
-    <div class="sleep-banner">
-      😴 <span>Si Sam ay natutulog ngayon. Minimum na plano: ₱10. &nbsp;|&nbsp; Sam is asleep. Min plan: ₱10.</span>
+  <div class="login-container">
+    <div class="login-title">
+      <h1>📶 Sam's WiFi</h1>
+      <p class="login-subtitle">Voucher Code Required</p>
     </div>
+
+    <% if (error) { %>
+      <div class="error-alert">⚠️ <%= error %></div>
     <% } %>
-    <!-- Brand -->
-    <div class="brand">
-      <div class="brand-logo">
-        <div class="brand-icon">📶</div>
-        <div>
-          <div class="brand-name"><span>Sam's</span> WiFi</div>
-        </div>
-      </div>
-      <p class="brand-tagline">Mabilis • Maaasahan • Abot-kaya &nbsp;|&nbsp; Fast • Reliable • Affordable</p>
+
+    <div style="margin-bottom: 20px;">
+      <p style="color: rgba(255,255,255,0.9); font-size: 14px; text-align: center; margin: 0 0 16px 0;">
+        <% if (sleepMode) { %>
+          😴 Sleep Mode: Pay via GCash & message for code
+        <% } else { %>
+          Choose your plan & enter voucher code
+        <% } %>
+      </p>
     </div>
 
-    <!-- Prices -->
-    <div class="prices-section">
-      <p class="prices-title">📋 Mga Presyo / Prices</p>
-      <div class="price-cards">
-        <div class="price-card<% if (sleepMode) { %> plan-restricted<% } %>">
-          <div class="price-amount"><span class="price-peso">₱</span>5</div>
-          <div class="price-duration">15 Minutes</div>
-          <div class="price-label-fil">Tatlumpung minuto</div>
-        </div>
-        <div class="price-card">
-          <div class="price-amount"><span class="price-peso">₱</span>10</div>
-          <div class="price-duration">30 Minutes</div>
-          <div class="price-label-fil">Kalahating Oras</div>
-        </div>
-        <div class="price-card">
-          <div class="price-amount"><span class="price-peso">₱</span>20</div>
-          <div class="price-duration">1 Hour</div>
-          <div class="price-label-fil">Isang Oras</div>
-        </div>
-        <div class="price-card unli-card">
-          <div>
-            <div class="price-amount"><span class="price-peso">₱</span>60</div>
-            <div class="price-duration">3 Oras / 3 hours</div>
-            <div class="price-label-fil">24 na Oras</div>
+    <form method="POST" action="/connect">
+      <!-- Plans Display -->
+      <div class="plans-grid">
+        <% plans.forEach(plan => { %>
+          <div class="plan-card <%= code === plan.name ? 'active' : '' %>">
+            <div class="plan-price"><%= plan.name.split(' / ')[0] %></div>
+            <div class="plan-duration"><%= plan.name.split(' / ')[1] %></div>
           </div>
-          <div>
-            <div class="unli-badge">🔥 UNLI</div>
-          </div>
-        </div>
+        <% }) %>
       </div>
-    </div>
 
-    <% if (sleepMode) { %>
-    <!-- GCash Payment Card (Sleep Mode) -->
-    <div class="gcash-card">
-      <div class="gcash-header">
-        <span style="font-size:1.3rem;">💚</span>
-        <div class="gcash-title">Magbayad sa GCash</div>
+      <!-- Voucher Code Input -->
+      <div class="form-group">
+        <label class="form-label">Voucher Code</label>
+        <input 
+          type="text" 
+          name="code" 
+          class="form-input" 
+          placeholder="SAM-XXXX"
+          value="<%= code %>"
+          maxlength="8"
+          required
+          autocomplete="off"
+        >
+        <div class="hint">Format: SAM-XXXX (found on your voucher slip)</div>
       </div>
-      <div style="font-size:0.78rem;color:var(--gray-400);margin-bottom:8px;">Pay via GCash, then message Sam for your code</div>
-      <div class="gcash-name"><%= gcash.name %></div>
+
+      <!-- Connect Button -->
+      <button type="submit" class="btn-connect">🔗 Connect</button>
+    </form>
+
+    <!-- GCash Section -->
+    <div class="gcash-section">
+      <div class="gcash-label">💳 Don't have a code?</div>
+      <div class="gcash-label" style="opacity: 1; font-weight: 600; margin-bottom: 12px;">Pay via GCash</div>
       <div class="gcash-number"><%= gcash.number %></div>
-      <div class="gcash-qr">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=144x144&data=<%= encodeURIComponent('https://gcash.com/send?number=' + gcash.number) %>" alt="GCash QR" />
+      <div class="gcash-name"><%= gcash.name %></div>
+      <div style="font-size: 12px; margin-top: 12px; opacity: 0.85;">
+        Send payment + message for your code
       </div>
-      <div class="gcash-steps">
-        1️⃣ &nbsp;I-scan ang QR o i-type ang numero sa GCash<br>
-        2️⃣ &nbsp;Ipadala ang ₱20 (1hr) o ₱60 (3hrs)<br>
-        3️⃣ &nbsp;I-screenshot ang resibo at i-message si Sam<br>
-        4️⃣ &nbsp;Bibigyan ka niya ng code — i-type ito sa ibaba
-      </div>
-    </div>
-    <% } %>
-    <div class="login-card">
-      <h2>
-        I-enter ang Iyong Code
-        <span class="subtitle">Enter your voucher code to connect</span>
-      </h2>
-
-      <% if (error) { %>
-        <div class="alert alert-error mb-2">
-          <span>⚠️</span> <%= error %>
-        </div>
-      <% } %>
-
-      <form action="/connect" method="POST" id="loginForm">
-        <div class="form-group">
-          <label class="form-label" for="code">Voucher Code</label>
-          <input
-            type="text"
-            id="code"
-            name="code"
-            class="form-input<%= error ? ' error' : '' %>"
-            placeholder="Halimbawa: SAM-A4B2"
-            value="<%= code %>"
-            maxlength="8"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            autofocus
-            required
-          >
-          <p class="code-hint">
-            💡 Format: <strong>SAM-XXXX</strong> — nakasulat sa iyong papel / on your paper slip
-          </p>
-        </div>
-
-        <div class="mt-2">
-          <button type="submit" class="btn btn-primary btn-lg" id="connectBtn">
-            <span id="btnText">🔗 Kumonekta / Connect</span>
-            <span class="spinner" id="btnSpinner"></span>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <div class="footer-note">
-      📍 Taytay, Rizal &nbsp;•&nbsp; Powered by Converge<br>
-      May problema? Makipag-ugnayan kay Sam.<br>
-      <small style="opacity:0.5">Having issues? Contact Sam for assistance.</small>
     </div>
   </div>
 
-  <script>
-    // Auto-format input as SAM-XXXX
-    const input = document.getElementById('code');
-    input.addEventListener('input', function() {
-      let v = this.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      if (v.startsWith('SAM')) v = v.substring(3);
-      if (v.length > 4) v = v.substring(0, 4);
-      this.value = v.length > 0 ? 'SAM-' + v : '';
-    });
-
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Backspace' && this.value === 'SAM-') {
-        this.value = '';
-        e.preventDefault();
-      }
-    });
-
-    // Show spinner on submit
-    document.getElementById('loginForm').addEventListener('submit', function() {
-      document.getElementById('btnText').style.opacity = '0.5';
-      document.getElementById('btnSpinner').style.display = 'block';
-    });
-  </script>
 </body>
 </html>
