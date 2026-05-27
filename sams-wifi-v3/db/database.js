@@ -351,8 +351,43 @@ function clearOldNotifications() {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
   run(`DELETE FROM notifications WHERE created_at < ?`, [cutoff]);
 }
+// ─── Free Trial Tracking ─────────────────────────────────────────────
+function trackConnection(mac) {
+  run(`CREATE TABLE IF NOT EXISTS connections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mac TEXT NOT NULL,
+    connected_at INTEGER NOT NULL,
+    has_voucher INTEGER DEFAULT 0
+  )`);
+  
+  // Check if this MAC already has an active entry
+  const existing = queryOne(`SELECT id FROM connections WHERE mac=? AND has_voucher=0`, [mac]);
+  if (!existing) {
+    run(`INSERT INTO connections (mac, connected_at, has_voucher) VALUES (?, ?, 0)`,
+      [mac, Date.now()]);
+  }
+}
+
+function markVoucherPaid(mac) {
+  run(`UPDATE connections SET has_voucher=1 WHERE mac=?`, [mac]);
+}
+
+function getConnectionTime(mac) {
+  const conn = queryOne(`SELECT connected_at FROM connections WHERE mac=?`, [mac]);
+  return conn ? Math.floor((Date.now() - conn.connected_at) / 1000 / 60) : 0; // returns minutes
+}
+
+function hasValidVoucher(mac) {
+  const conn = queryOne(`SELECT has_voucher FROM connections WHERE mac=?`, [mac]);
+  return conn ? conn.has_voucher === 1 : false;
+}
+
+function cleanupOldConnections() {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  run(`DELETE FROM connections WHERE connected_at < ?`, [cutoff]);
+}
 module.exports = {
-  initDb, PLANS,createNotification, getUnreadNotifications, markNotificationRead, clearOldNotifications,
+  initDb, PLANS,createNotification, getUnreadNotifications, markNotificationRead, clearOldNotifications,trackConnection, markVoucherPaid, getConnectionTime, hasValidVoucher, cleanupOldConnections,
   generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
   getActiveUsers, getSalesStats, getLoadRecommendation,
   getAllVouchers, getAdmin, updateAdminPassword, getVoucherCounts, getUnusedCounts,
