@@ -1,78 +1,66 @@
-// routes/admin.js — dashboard route only
+// routes/api.js — add these endpoints
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const { getAdmin, updateAdminPassword, getActiveUsers, getSalesStats, getLoadRecommendation, getVoucherCounts, getUnusedCounts, getSleepMode, setSleepMode, query } = require('../db/database');
+const { getUnreadNotifications, markNotificationRead, getConnectionTime, markVoucherPaid, trackConnection, queryOne } = require('../db/database');
 
-// ─── Dashboard ───────────────────────────────────────────────────────────────
-router.get('/', (req, res) => {
-  if (!req.session.isAdmin) return res.redirect('/admin/login');
-  
-  const activeUsers = getActiveUsers();
-  const sales = getSalesStats();
-  const loadRec = getLoadRecommendation();
-  const voucherCounts = getVoucherCounts();
-  const unusedCounts = getUnusedCounts();
-  const sleepMode = getSleepMode();
-
-  // Get non-payers
-  const nonPayers = query(`
-    SELECT mac, connected_at, 
-           CAST((strftime('%s','now') - connected_at/1000) / 60 AS INTEGER) as minutes_connected
-    FROM connections 
-    WHERE has_voucher=0 
-    AND connected_at > (strftime('%s','now') - 3600) * 1000
-    ORDER BY connected_at DESC
-    LIMIT 20
-  `);
-
-  res.render('admin/dashboard', {
-    title: 'Dashboard',
-    adminUser: req.session.adminUser,
-    activeUsers,
-    sales,
-    loadRec,
-    voucherCounts,
-    unusedCounts,
-    sleepMode,
-    nonPayers
-  });
+// ─── Notifications ───────────────────────────────────────────────────────────
+router.get('/notifications', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  const notifs = getUnreadNotifications();
+  res.json(notifs);
 });
 
-// ─── Sleep Mode Toggle ───────────────────────────────────────────────────────
-router.post('/sleep-mode', (req, res) => {
+router.post('/notifications/:id/read', (req, res) => {
   if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  const enabled = req.body.enabled === 'true';
-  setSleepMode(enabled);
+  markNotificationRead(req.params.id);
   res.json({ success: true });
 });
 
-// ─── Change Password ─────────────────────────────────────────────────────────
-router.post('/change-password', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+// ─── Gateway Check (Voucher Validation) ──────────────────────────────────────
+router.get('/gateway/check', (req, res) => {
+  const mac = req.query.mac;
+  if (!mac) return res.send('block');
   
-  const { current, newpass, confirm } = req.body;
-  const admin = getAdmin(req.session.adminUser);
+  const active = queryOne(
+    `SELECT v.code FROM vouchers v 
+     WHERE v.status='active' 
+     AND v.expires_at > ? 
+     AND v.device_id LIKE ?`,
+    [Date.now(), '%' + mac.replace(/:/g, '').toLowerCase() + '%']
+  );
+  res.send(active ? 'allow' : 'block');
+});
+
+// ─── Free Trial Tracking ─────────────────────────────────────────────────────
+router.get('/gateway/track', (req, res) => {
+  const mac = req.query.mac;
+  if (!mac) return res.send('error');
   
-  if (!bcrypt.compareSync(current, admin.password_hash)) {
-    return res.json({ success: false, error: 'Current password is incorrect' });
-  }
-  if (newpass.length < 6) {
-    return res.json({ success: false, error: 'New password must be at least 6 characters' });
-  }
-  if (newpass !== confirm) {
-    return res.json({ success: false, error: 'Passwords do not match' });
-  }
+  trackConnection(mac);
+  res.send('tracked');
+});
+
+router.get('/gateway/trial-time', (req, res) => {
+  const mac = req.query.mac;
+  if (!mac) return res.send('0');
   
-  const hash = bcrypt.hashSync(newpass, 10);
-  updateAdminPassword(req.session.adminUser, hash);
+  const mins = getConnectionTime(mac);
+  res.send(String(mins));
+});
+
+router.post('/gateway/mark-paid', (req, res) => {
+  const mac = req.query.mac;
+  if (!mac) return res.json({ error: 'no mac' });
+  
+  markVoucherPaid(mac);
   res.json({ success: true });
 });
 
-// ─── Logout ──────────────────────────────────────────────────────────────────
-router.post('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/admin/login');
+// ─── Admin Active Users ──────────────────────────────────────────────────────
+router.get('/admin/active-users', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  const { getActiveUsers } = require('../db/database');
+  res.json(getActiveUsers());
 });
 
 module.exports = router;
