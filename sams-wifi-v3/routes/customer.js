@@ -28,6 +28,7 @@ router.post('/connect', (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
   const deviceId = buildDeviceId(req);
   const sleepMode = getSleepMode();
+  const { createNotification } = require('../db/database');
 
   // Rate limit — 10 attempts per 5 minutes
   const rateCheck = checkRateLimit(ip, 'code_attempt');
@@ -56,16 +57,22 @@ router.post('/connect', (req, res) => {
       code: code.toUpperCase()
     });
   }
-const { createNotification } = require('../db/database');
-  
-  // Sleep mode: block ₱5 / 30min vouchers
-  if (sleepMode && result.voucher.plan === '30min') {
+
+  // Sleep mode: block ₱5 / 5min vouchers
+  if (sleepMode && result.voucher.plan === '5min') {
     return res.render('login', {
       title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱10. Mag-GCash at makipag-ugnayan para sa iyong code. (Sam is asleep. Minimum plan is ₱10. Pay via GCash and message for your code.)',
+      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱5. Mag-GCash at makipag-ugnayan para sa iyong code.',
       code: ''
     });
   }
+
+  // CREATE NOTIFICATION HERE — before redirect
+  createNotification('sale', `New sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
+    code: result.voucher.code,
+    price: result.voucher.price,
+    plan: result.voucher.plan
+  });
 
   req.session.voucher = {
     code: result.voucher.code,
@@ -77,11 +84,6 @@ const { createNotification } = require('../db/database');
   };
 
   res.redirect('/portal');
-});
-createNotification('sale', `New sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
-  code: result.voucher.code,
-  price: result.voucher.price,
-  plan: result.voucher.plan
 });
 // ─── Portal ───────────────────────────────────────────────────────────────────
 router.get('/portal', (req, res) => {
