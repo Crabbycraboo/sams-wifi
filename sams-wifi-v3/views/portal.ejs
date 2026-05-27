@@ -6,330 +6,159 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .portal-wrapper {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 440px;
-    }
-
-    .portal-header {
+    .dashboard {
+      max-width: 500px;
+      margin: 60px auto 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 40px 30px;
+      color: white;
       text-align: center;
-      margin-bottom: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    .portal-header .brand-name {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--white);
-    }
-    .portal-header .brand-name span { color: var(--accent); }
-    .connected-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(16,185,129,0.15);
-      border: 1px solid rgba(16,185,129,0.3);
-      color: #6ee7b7;
-      padding: 4px 14px;
-      border-radius: 100px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-top: 6px;
-    }
-    .dot-live {
-      width: 8px; height: 8px;
-      background: var(--success);
-      border-radius: 50%;
-      animation: blink 1.2s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    /* Timer */
-    .timer-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius);
-      padding: 32px 24px;
-      text-align: center;
-      margin-bottom: 16px;
-      backdrop-filter: blur(20px);
-    }
-    .timer-ring { margin-bottom: 20px; }
-
-    /* Info grid */
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .info-item {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-    }
-    .info-item .info-label {
-      font-size: 0.7rem;
+    .dashboard h1 {
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0.9;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--gray-400);
+    }
+    .time-display {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 20px 0;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 2px;
+    }
+    .plan-info {
+      display: flex;
+      justify-content: space-around;
+      margin: 30px 0;
+      padding: 20px 0;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .plan-info div {
+      flex: 1;
+    }
+    .plan-info label {
+      font-size: 12px;
+      opacity: 0.8;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .plan-info value {
+      font-size: 18px;
       font-weight: 600;
-      margin-bottom: 4px;
+      display: block;
     }
-    .info-item .info-value {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--white);
+    .connected-time {
+      margin-top: 20px;
+      font-size: 13px;
+      opacity: 0.85;
     }
-    .info-item .info-value.mono { font-family: var(--mono); color: var(--accent); }
-
-    /* Warning overlay */
-    #warning-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(10,22,40,0.85);
-      backdrop-filter: blur(6px);
-      z-index: 1000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    .warning {
+      background: #ff6b6b;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 20px auto;
+      max-width: 500px;
+      font-size: 14px;
+      font-weight: 500;
+      animation: pulse 1s infinite;
     }
-    #warning-overlay.show { display: flex; }
-    .warning-box {
-      background: var(--blue-800);
-      border: 2px solid var(--danger);
-      border-radius: var(--radius);
-      padding: 36px 28px;
-      max-width: 380px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 0 60px rgba(239,68,68,0.25);
-      animation: shake 0.5s ease;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
     }
-    @keyframes shake {
-      0%,100%{ transform: translateX(0); }
-      25%{ transform: translateX(-8px); }
-      75%{ transform: translateX(8px); }
+    .logout-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid white;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.3s;
     }
-    .warning-icon { font-size: 3rem; margin-bottom: 12px; animation: blink 0.8s linear infinite; }
-    .warning-countdown {
-      font-family: var(--mono);
-      font-size: 3rem;
-      font-weight: 700;
-      color: var(--danger);
-      line-height: 1;
-      margin: 16px 0;
+    .logout-btn:hover {
+      background: white;
+      color: #667eea;
     }
   </style>
 </head>
 <body>
-  <div class="bg-network"></div>
-
-  <!-- Warning Overlay (shown at 60s remaining) -->
-  <div id="warning-overlay">
-    <div class="warning-box">
-      <div class="warning-icon">⚠️</div>
-      <h2 style="color:var(--danger); margin-bottom:8px;">Malapit na matapos!</h2>
-      <p style="color:var(--gray-400); font-size:0.9rem;">Your session is ending in:</p>
-      <div class="warning-countdown" id="warningCountdown">60</div>
-      <p style="color:var(--gray-400); font-size:0.85rem; margin-bottom:20px;">
-        Ikaw ay awtomatikong ididiskonekta.<br>
-        <small>You will be automatically disconnected.</small>
-      </p>
-      <button class="btn btn-danger" onclick="dismissWarning()">OK, Naiintindihan Ko</button>
-    </div>
-  </div>
-
-  <div class="portal-wrapper">
-    <div class="portal-header">
-      <div class="brand-name"><span>Sam's</span> WiFi</div>
-      <div class="connected-badge">
-        <span class="dot-live"></span>
-        Konektado / Connected
+  <div class="dashboard">
+    <h1>⏱️ Time Remaining</h1>
+    <div class="time-display" id="timer">--:--</div>
+    
+    <div class="plan-info">
+      <div>
+        <label>PLAN</label>
+        <value><%= voucher.plan %></value>
+      </div>
+      <div>
+        <label>PRICE</label>
+        <value>₱<%= voucher.price %></value>
       </div>
     </div>
 
-    <!-- Timer Card -->
-    <div class="timer-card">
-      <div class="timer-ring">
-        <svg width="200" height="200" viewBox="0 0 200 200">
-          <circle class="timer-ring-bg" cx="100" cy="100" r="88"/>
-          <circle class="timer-ring-progress" id="timerCircle" cx="100" cy="100" r="88"
-            stroke-dasharray="553"
-            stroke-dashoffset="0"/>
-        </svg>
-        <div class="timer-ring-text">
-          <div class="timer-time" id="timerDisplay">--:--</div>
-          <div class="timer-label">Natitira / Remaining</div>
-        </div>
-      </div>
+    <div class="connected-time" id="connectedTime"></div>
 
-      <p style="font-size:0.85rem; color:var(--gray-400);">
-        Huwag isara ang tab na ito habang konektado.<br>
-        <small>Keep this tab open while connected.</small>
-      </p>
-    </div>
+    <div id="warningBox"></div>
 
-    <!-- Session Info -->
-    <div class="info-grid">
-      <div class="info-item">
-        <div class="info-label">Voucher Code</div>
-        <div class="info-value mono"><%= voucher.code %></div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Plano / Plan</div>
-        <div class="info-value">
-          <% if(voucher.plan === '30min') { %>₱5 – 30 Min<% } %>
-          <% if(voucher.plan === '1hr') { %>₱10 – 1 Oras<% } %>
-          <% if(voucher.plan === '3hr') { %>₱20 – 3 Oras<% } %>
-          <% if(voucher.plan === 'unli') { %>🔥 ₱60 – Unli Buong Araw<% } %>
-        </div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Natapos sa / Expires</div>
-        <div class="info-value" id="expiresAt" style="font-size:0.85rem;">...</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Katayuan / Status</div>
-        <div class="info-value" style="color:var(--success);">● Aktibo</div>
-      </div>
-    </div>
-
-    <form action="/logout" method="POST">
-      <button type="submit" class="btn btn-outline btn-lg" style="font-size:0.9rem;">
-        🚪 Mag-logout / Disconnect
-      </button>
+    <form method="POST" action="/logout" style="margin-top: 20px;">
+      <button type="submit" class="logout-btn">Disconnect</button>
     </form>
-
-    <p style="text-align:center; margin-top:12px; font-size:0.75rem; color:var(--gray-400);">
-      📍 Sam's WiFi – Taytay, Rizal
-    </p>
   </div>
 
   <script>
-    const EXPIRES_AT = <%= voucher.expires_at %>;
-    const DURATION_MS = <%=
-      voucher.plan === '30min' ? 30*60*1000 :
-      voucher.plan === '1hr'   ? 60*60*1000 :
-                                 3*60*60*1000
-    %>;
-
-    const timerDisplay  = document.getElementById('timerDisplay');
-    const timerCircle   = document.getElementById('timerCircle');
-    const warningOverlay = document.getElementById('warning-overlay');
-    const warningCountdown = document.getElementById('warningCountdown');
-    const expiresAtEl   = document.getElementById('expiresAt');
-
-    const CIRCUMFERENCE = 553; // 2 * Math.PI * 88
-    let warningShown = false;
-    let warningDismissed = false;
-    let pollFailures = 0;
-
-    // Format expires_at
-    const expDate = new Date(EXPIRES_AT);
-    expiresAtEl.textContent = expDate.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
-
-    function formatTime(ms) {
-      if (ms <= 0) return '00:00';
-      const totalSec = Math.floor(ms / 1000);
-      const hrs = Math.floor(totalSec / 3600);
-      const mins = Math.floor((totalSec % 3600) / 60);
-      const secs = totalSec % 60;
-      if (hrs > 0) {
-        return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-      }
-      return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-    }
+    const expiresAt = <%= voucher.expires_at %>;
+    const warningThreshold = 2 * 60 * 1000; // 2 minutes
 
     function updateTimer() {
       const now = Date.now();
-      const remaining = EXPIRES_AT - now;
+      const msRemaining = expiresAt - now;
 
-      if (remaining <= 0) {
-        timerDisplay.textContent = '00:00';
-        timerCircle.style.strokeDashoffset = CIRCUMFERENCE;
-        redirectToExpired();
+      if (msRemaining <= 0) {
+        document.getElementById('timer').textContent = '00:00';
+        document.getElementById('timer').style.color = '#ff6b6b';
         return;
       }
 
-      // Update display
-      timerDisplay.textContent = formatTime(remaining);
+      const mins = Math.floor(msRemaining / 60000);
+      const secs = Math.floor((msRemaining % 60000) / 1000);
+      document.getElementById('timer').textContent = 
+        String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 
-      // Update ring
-      const fraction = remaining / DURATION_MS;
-      const offset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
-      timerCircle.style.strokeDashoffset = offset;
-
-      // Color change when low
-      if (remaining < 5 * 60 * 1000) {
-        timerCircle.style.stroke = 'var(--danger)';
-        timerDisplay.style.color = 'var(--danger)';
-      } else if (remaining < 10 * 60 * 1000) {
-        timerCircle.style.stroke = 'var(--warning)';
-        timerDisplay.style.color = 'var(--warning)';
-      }
-
-      // Show warning at 60 seconds
-      if (remaining <= 60000 && !warningShown && !warningDismissed) {
-        warningShown = true;
-        showWarning(Math.floor(remaining / 1000));
-      }
-    }
-
-    function showWarning(startSec) {
-      warningOverlay.classList.add('show');
-      let sec = startSec;
-      const wInterval = setInterval(() => {
-        sec--;
-        warningCountdown.textContent = Math.max(0, sec);
-        if (sec <= 0) {
-          clearInterval(wInterval);
-          redirectToExpired();
+      // Show warning if 2 minutes or less
+      const warningBox = document.getElementById('warningBox');
+      if (msRemaining <= warningThreshold && msRemaining > 0) {
+        if (!warningBox.innerHTML) {
+          warningBox.innerHTML = '⚠️ <strong>2 minutes left!</strong> Your connection will end soon.';
+          warningBox.className = 'warning';
         }
-      }, 1000);
-    }
+      } else if (msRemaining > warningThreshold) {
+        warningBox.innerHTML = '';
+        warningBox.className = '';
+      }
 
-    function dismissWarning() {
-      warningDismissed = true;
-      warningOverlay.classList.remove('show');
-    }
-
-    function redirectToExpired() {
-      setTimeout(() => { window.location.href = '/expired'; }, 1000);
-    }
-
-    // Poll server every 30s for session validation
-    async function pollSession() {
-      try {
-        const res = await fetch('/api/session-status');
-        const data = await res.json();
-        if (data.status === 'expired' || data.status === 'no_session' || data.status === 'device_mismatch') {
-          redirectToExpired();
-        }
-        pollFailures = 0;
-      } catch (e) {
-        pollFailures++;
-        if (pollFailures >= 3) console.warn('Session poll failing, continuing on client timer');
+      // Change color to red when under 1 minute
+      if (msRemaining < 60000) {
+        document.getElementById('timer').style.color = '#ff6b6b';
       }
     }
 
-    // Run timer every second
+    // Update every 500ms for smooth countdown
+    setInterval(updateTimer, 500);
     updateTimer();
-    setInterval(updateTimer, 1000);
 
-    // Poll server every 30 seconds
-    setInterval(pollSession, 15000);
+    // Show connected time
+    const connectedTime = new Date(<%= voucher.started_at %>).toLocaleTimeString();
+    document.getElementById('connectedTime').textContent = '📍 Connected: ' + connectedTime;
   </script>
 </body>
 </html>
