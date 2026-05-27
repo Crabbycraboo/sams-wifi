@@ -1,7 +1,7 @@
-// routes/customer.js — with sleep mode + ₱5 restriction + GCash display
+// routes/customer.js — with notifications + free trial
 const express = require('express');
 const router = express.Router();
-const { redeemVoucher, PLANS, checkRateLimit, buildDeviceId, getSleepMode } = require('../db/database');
+const { redeemVoucher, PLANS, checkRateLimit, buildDeviceId, getSleepMode, createNotification, trackConnection, markVoucherPaid } = require('../db/database');
 
 const GCASH = {
   number: '09287440932',
@@ -28,7 +28,9 @@ router.post('/connect', (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
   const deviceId = buildDeviceId(req);
   const sleepMode = getSleepMode();
-  const { createNotification } = require('../db/database');
+
+  // Track this connection for free trial
+  trackConnection(deviceId);
 
   // Rate limit — 10 attempts per 5 minutes
   const rateCheck = checkRateLimit(ip, 'code_attempt');
@@ -58,16 +60,19 @@ router.post('/connect', (req, res) => {
     });
   }
 
-  // Sleep mode: block ₱5 / 5min vouchers
+  // Sleep mode: block ₱2 / 5min vouchers
   if (sleepMode && result.voucher.plan === '5min') {
     return res.render('login', {
       title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱5. Mag-GCash at makipag-ugnayan para sa iyong code.',
+      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱5. Mag-GCash at makipag-ugnayan para sa iyong code. (Sam is asleep. Minimum plan is ₱5. Pay via GCash and message for your code.)',
       code: ''
     });
   }
 
-  // CREATE NOTIFICATION HERE — before redirect
+  // Mark as paid in free trial tracking
+  markVoucherPaid(deviceId);
+
+  // Create notification for admin
   createNotification('sale', `New sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
     code: result.voucher.code,
     price: result.voucher.price,
@@ -85,6 +90,7 @@ router.post('/connect', (req, res) => {
 
   res.redirect('/portal');
 });
+
 // ─── Portal ───────────────────────────────────────────────────────────────────
 router.get('/portal', (req, res) => {
   if (!req.session.voucher) return res.redirect('/');
