@@ -1,66 +1,78 @@
-// routes/api.js — hardened with faster polling + device re-verification
+// routes/admin.js — dashboard route only
 const express = require('express');
 const router = express.Router();
-const { queryOne, getActiveUsers, getLoadRecommendation, buildDeviceId } = require('../db/database');
-// ─── Session status (polled every 15s by portal) ──────────────────────────────
-router.get('/session-status', (req, res) => {
-  if (!req.session.voucher) {
-    return res.json({ status: 'no_session' });
-  }
-  const v = req.session.voucher;
-  const now = Date.now();
-  const msRemaining = v.expires_at - now;
-  if (msRemaining <= 0) {
-    req.session.destroy();
-    return res.json({ status: 'expired' });
-  }
-  // Verify device fingerprint hasn't changed mid-session (catches tab sharing)
-  const currentDevice = buildDeviceId(req);
-  if (currentDevice !== v.device_id) {
-    req.session.destroy();
-    return res.json({ status: 'device_mismatch' });
-  }
-  // Verify DB still shows this as active (catches server-side expiry)
-  const dbVoucher = queryOne('SELECT status, expires_at FROM vouchers WHERE code = ?', [v.code]);
-  if (!dbVoucher || dbVoucher.status === 'expired') {
-    req.session.destroy();
-    return res.json({ status: 'expired' });
-  }
-  // Use DB expires_at as the authoritative source
-  const authoritativeRemaining = dbVoucher.expires_at - now;
-  if (authoritativeRemaining <= 0) {
-    req.session.destroy();
-    return res.json({ status: 'expired' });
-  }
-  res.json({
-    status: 'active',
-    msRemaining: authoritativeRemaining,
-    code: v.code,
-    plan: v.plan,
-    expires_at: dbVoucher.expires_at
+const bcrypt = require('bcryptjs');
+const { getAdmin, updateAdminPassword, getActiveUsers, getSalesStats, getLoadRecommendation, getVoucherCounts, getUnusedCounts, getSleepMode, setSleepMode, query } = require('../db/database');
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+router.get('/', (req, res) => {
+  if (!req.session.isAdmin) return res.redirect('/admin/login');
+  
+  const activeUsers = getActiveUsers();
+  const sales = getSalesStats();
+  const loadRec = getLoadRecommendation();
+  const voucherCounts = getVoucherCounts();
+  const unusedCounts = getUnusedCounts();
+  const sleepMode = getSleepMode();
+
+  // Get non-payers
+  const nonPayers = query(`
+    SELECT mac, connected_at, 
+           CAST((strftime('%s','now') - connected_at/1000) / 60 AS INTEGER) as minutes_connected
+    FROM connections 
+    WHERE has_voucher=0 
+    AND connected_at > (strftime('%s','now') - 3600) * 1000
+    ORDER BY connected_at DESC
+    LIMIT 20
+  `);
+
+  res.render('admin/dashboard', {
+    title: 'Dashboard',
+    adminUser: req.session.adminUser,
+    activeUsers,
+    sales,
+    loadRec,
+    voucherCounts,
+    unusedCounts,
+    sleepMode,
+    nonPayers
   });
 });
-// ─── Admin: active users ──────────────────────────────────────────────────────
-router.get('/admin/active-users', (req, res) => {
+
+// ─── Sleep Mode Toggle ───────────────────────────────────────────────────────
+router.post('/sleep-mode', (req, res) => {
   if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  res.json(getActiveUsers());
+  const enabled = req.body.enabled === 'true';
+  setSleepMode(enabled);
+  res.json({ success: true });
 });
-// ─── Admin: load recommendation ───────────────────────────────────────────────
-router.get('/admin/load-rec', (req, res) => {
+
+// ─── Change Password ─────────────────────────────────────────────────────────
+router.post('/change-password', (req, res) => {
   if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  res.json(getLoadRecommendation());
+  
+  const { current, newpass, confirm } = req.body;
+  const admin = getAdmin(req.session.adminUser);
+  
+  if (!bcrypt.compareSync(current, admin.password_hash)) {
+    return res.json({ success: false, error: 'Current password is incorrect' });
+  }
+  if (newpass.length < 6) {
+    return res.json({ success: false, error: 'New password must be at least 6 characters' });
+  }
+  if (newpass !== confirm) {
+    return res.json({ success: false, error: 'Passwords do not match' });
+  }
+  
+  const hash = bcrypt.hashSync(newpass, 10);
+  updateAdminPassword(req.session.adminUser, hash);
+  res.json({ success: true });
 });
-// Gateway enforcement endpoint — called by OpenWrt router every 30s
-router.get('/gateway/check', (req, res) => {
-  const mac = req.query.mac;
-  if (!mac) return res.send('block');
-  const active = queryOne(
-    `SELECT v.code FROM vouchers v 
-     WHERE v.status='active' 
-     AND v.expires_at > ? 
-     AND v.device_id LIKE ?`,
-    [Date.now(), '%' + mac.replace(/:/g, '').toLowerCase() + '%']
-  );
-  res.send(active ? 'allow' : 'block');
+
+// ─── Logout ──────────────────────────────────────────────────────────────────
+router.post('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/admin/login');
 });
+
 module.exports = router;
