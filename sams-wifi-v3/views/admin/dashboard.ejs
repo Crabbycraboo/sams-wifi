@@ -1,6 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<div id="notificationPanel" style="position: fixed; top: 20px; right: 20px; width: 350px; max-height: 400px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; overflow-y: auto; display: none;">
+  <div style="padding: 15px; border-bottom: 1px solid #eee; font-weight: 600;">
+    🔔 Notifications
+  </div>
+  <div id="notificationList"></div>
+</div>
+
+<script>
+  async function loadNotifications() {
+    const res = await fetch('/api/notifications');
+    const notifs = await res.json();
+    
+    const list = document.getElementById('notificationList');
+    if (notifs.length === 0) {
+      list.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No new notifications</div>';
+      return;
+    }
+
+    list.innerHTML = notifs.map(n => `
+      <div style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
+        <div style="font-weight: 600; margin-bottom: 5px;">
+          ${n.type === 'sale' ? '💰' : n.type === 'expiring' ? '⏱️' : '🚨'} ${n.message}
+        </div>
+        <div style="color: #999; font-size: 12px;">
+          ${new Date(n.created_at).toLocaleTimeString()}
+        </div>
+      </div>
+    `).join('');
+
+    // Show browser notification for first unread
+    if (notifs.length > 0) {
+      const first = notifs[0];
+      new Notification('Sam WiFi', {
+        body: first.message,
+        icon: '/icon.png'
+      });
+    }
+  }
+
+  // Load every 10 seconds
+  loadNotifications();
+  setInterval(loadNotifications, 10000);
+
+  // Click to toggle panel
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'n') {
+      const panel = document.getElementById('notificationPanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
