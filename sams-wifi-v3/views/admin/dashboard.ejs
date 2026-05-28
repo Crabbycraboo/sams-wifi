@@ -3,149 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a1628; color: #fff; }
-    
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    h1 { font-size: 32px; }
-    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-    .btn-primary { background: #667eea; color: white; }
-    .btn-primary:hover { background: #5568d3; }
-    
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
-    .stat { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; }
-    .stat-value { font-size: 28px; font-weight: bold; color: #667eea; margin: 10px 0; }
-    .stat-label { font-size: 13px; color: rgba(255,255,255,0.6); }
-    
-    .card { background: rgba(255,255,255,0.03); padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.08); }
-    .card h2 { margin-bottom: 16px; font-size: 20px; }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    th { color: rgba(255,255,255,0.6); font-weight: 600; font-size: 12px; }
-    
-    .form-group { margin-bottom: 16px; }
-    .form-input { width: 100%; padding: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; }
-    .form-input::placeholder { color: rgba(255,255,255,0.4); }
-    
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-    .modal.open { display: flex; }
-    .modal-content { background: #0a1628; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; }
-    
-    .toggle { background: rgba(255,255,255,0.08); padding: 16px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .toggle-btn { padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; }
-  </style>
+  <title>Admin Dashboard – Sam's WiFi</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
-<body>
+<body class="admin-body">
 
-<div class="container">
-  
-  <div class="header">
-    <h1>📊 Sam's WiFi Admin</h1>
-    <button class="btn btn-primary" onclick="location.reload()">🔄 Refresh</button>
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-title"><span>Sam's</span> WiFi</div>
+    <div class="brand-sub">Admin Panel</div>
   </div>
-
-  <!-- Sleep Mode Toggle -->
-  <div class="toggle">
-    <div>
-      <strong><%= sleepMode ? '😴 Sleep Mode ON' : '☀️ Sleep Mode OFF' %></strong>
-    </div>
-    <button class="toggle-btn" onclick="toggleSleep()"><%= sleepMode ? 'Wake Up' : 'Sleep' %></button>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="/admin" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/admin/vouchers" class="nav-link"><span class="nav-icon">🎫</span> Vouchers</a>
+    <div class="nav-section-label" style="margin-top:12px;">Other</div>
+    <a href="/" class="nav-link" target="_blank"><span class="nav-icon">🌐</span> Customer Portal</a>
+  </nav>
+  <div class="sidebar-footer">
+    <form action="/admin/logout" method="POST">
+      <button type="submit" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:0;font-family:var(--font);">⏏ Logout</button>
+    </form>
   </div>
+</aside>
 
-  <!-- Stats -->
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-label">👥 Active Users</div>
-      <div class="stat-value"><%= activeUsers.length %></div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">💰 Today's Sales</div>
-      <div class="stat-value">₱<%= sales.todaySales.total %></div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">🎫 Unused Vouchers</div>
-      <div class="stat-value"><%= (unusedCounts['5min'] || 0) + (unusedCounts['15min'] || 0) + (unusedCounts['30min'] || 0) + (unusedCounts['60min'] || 0) + (unusedCounts['3hrs'] || 0) %></div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">📈 Total Revenue</div>
-      <div class="stat-value">₱<%= sales.totalSales.total %></div>
+<main class="admin-main">
+  <div class="admin-topbar">
+    <h1>📊 Dashboard</h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:0.8rem;color:var(--gray-400);">👤 <%= adminUser %></span>
+      <button class="btn btn-outline btn-sm" onclick="location.reload()">🔄 Refresh</button>
     </div>
   </div>
 
-  <!-- Active Users -->
-  <div class="card">
-    <h2>👥 Active Users (<%= activeUsers.length %>)</h2>
-    <% if (activeUsers.length === 0) { %>
-      <p style="color: rgba(255,255,255,0.5);">No active users</p>
-    <% } else { %>
-      <table>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Plan</th>
-            <th>Time Left</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% activeUsers.slice(0, 10).forEach(u => {
-            const mins = Math.floor((u.expires_at - Date.now()) / 60000);
-            const hrs = Math.floor(mins / 60);
-            const displayTime = hrs > 0 ? hrs + 'h ' + (mins % 60) + 'm' : mins + 'm';
-          %>
-          <tr>
-            <td><%= u.code %></td>
-            <td><%= u.plan %></td>
-            <td style="color: <%= mins < 5 ? '#ff6b6b' : '#fcd34d' %>"><%= displayTime %></td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    <% } %>
-  </div>
+  <div class="admin-content">
 
-  <!-- Sales -->
-  <div class="card">
-    <h2>💰 This Week's Sales</h2>
-    <p style="color: rgba(255,255,255,0.6); margin-bottom: 16px;">₱<%= sales.weekSales.total %> from <%= sales.weekSales.count %> sessions</p>
-    <% if (sales.byPlan && sales.byPlan.length > 0) { %>
-      <% sales.byPlan.forEach(p => { %>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-          <span><%= p.plan %></span>
-          <span style="color: #667eea;">₱<%= p.revenue %> (<%= p.count %>x)</span>
+    <!-- Sleep Mode Toggle -->
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;margin-bottom:24px;">
+      <div>
+        <strong style="font-size:1rem;"><%= sleepMode ? '😴 Sleep Mode ON' : '☀️ Sleep Mode OFF' %></strong>
+        <p style="font-size:0.78rem;color:var(--gray-400);margin-top:2px;">
+          <%= sleepMode ? 'Only ₱5+ plans available. GCash orders only.' : 'All plans available. Business open.' %>
+        </p>
+      </div>
+      <button class="btn <%= sleepMode ? 'btn-primary' : 'btn-outline' %> btn-sm" onclick="toggleSleep()">
+        <%= sleepMode ? '☀️ Wake Up' : '😴 Sleep' %>
+      </button>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
+      <div class="stat-card card">
+        <div class="stat-label">👥 Active Users</div>
+        <div class="stat-value"><%= activeUsers.length %></div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">💰 Today's Sales</div>
+        <div class="stat-value">₱<%= sales.todaySales.total %></div>
+        <div style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;"><%= sales.todaySales.count %> sessions</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">🎫 Unused Vouchers</div>
+        <div class="stat-value"><%= voucherCounts.unused %></div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">📈 Total Revenue</div>
+        <div class="stat-value">₱<%= sales.totalSales.total %></div>
+        <div style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;"><%= sales.totalSales.count %> all-time</div>
+      </div>
+    </div>
+
+    <!-- Active Users table -->
+    <div class="card" style="margin-bottom:24px;">
+      <h2 style="margin-bottom:16px;">👥 Active Users (<%= activeUsers.length %>)</h2>
+      <% if (activeUsers.length === 0) { %>
+        <p style="color:var(--gray-400);text-align:center;padding:24px 0;font-size:0.9rem;">No active users right now.</p>
+      <% } else { %>
+        <div style="overflow-x:auto;">
+          <table class="users-table">
+            <thead>
+              <tr><th>Code</th><th>Plan</th><th>Price</th><th>Time Left</th></tr>
+            </thead>
+            <tbody>
+              <% activeUsers.slice(0, 15).forEach(u => {
+                const mins = Math.floor((u.expires_at - Date.now()) / 60000);
+                const hrs  = Math.floor(mins / 60);
+                const disp = hrs > 0 ? hrs + 'h ' + (mins % 60) + 'm' : mins + 'm';
+              %>
+              <tr>
+                <td class="code-cell"><%= u.code %></td>
+                <td><%= u.plan %></td>
+                <td style="color:var(--accent);font-family:var(--mono);">₱<%= u.price %></td>
+                <td style="color:<%= mins < 5 ? 'var(--danger)' : mins < 10 ? '#fcd34d' : 'var(--success)' %>"><%= disp %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
         </div>
-      <% }) %>
-    <% } %>
-  </div>
-
-  <!-- Password Change -->
-  <div class="card">
-    <h2>🔑 Admin Settings</h2>
-    <button class="btn btn-primary" onclick="showModal()">Change Password</button>
-    <div style="margin-top: 16px;">
-      <p style="color: rgba(255,255,255,0.6); font-size: 13px;">Logged in as: <strong><%= adminUser %></strong></p>
-      <form action="/admin/logout" method="POST" style="margin-top: 12px;">
-        <button type="submit" class="btn btn-primary" style="background: #ef4444;">Logout</button>
-      </form>
+      <% } %>
     </div>
-  </div>
 
-  <!-- Quick Links -->
-  <div style="display: flex; gap: 12px; margin-top: 24px;">
-    <a href="/admin/vouchers" class="btn btn-primary">🎫 Manage Vouchers</a>
-    <a href="/" class="btn btn-primary" style="background: rgba(255,255,255,0.1);">🌐 Customer Portal</a>
-  </div>
+    <!-- Sales breakdown -->
+    <div class="card" style="margin-bottom:24px;">
+      <h2 style="margin-bottom:16px;">💰 This Week's Sales</h2>
+      <p style="color:var(--gray-400);font-size:0.85rem;margin-bottom:16px;">
+        ₱<%= sales.weekSales.total %> from <%= sales.weekSales.count %> sessions
+      </p>
+      <% if (sales.byPlan && sales.byPlan.length > 0) { %>
+        <% sales.byPlan.forEach(p => { %>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <span style="color:var(--gray-200);font-family:var(--mono);font-size:0.9rem;"><%= p.plan %></span>
+            <span style="color:var(--accent);font-family:var(--mono);">₱<%= p.revenue %> <span style="color:var(--gray-400);font-size:0.8rem;">(<%= p.count %>x)</span></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p style="color:var(--gray-400);font-size:0.85rem;">No sales this week yet.</p>
+      <% } %>
+    </div>
 
-</div>
+    <!-- Voucher stock -->
+    <div class="card" style="margin-bottom:24px;">
+      <h2 style="margin-bottom:16px;">🎫 Voucher Stock</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;">
+        <% const stockPlans = [
+          {id:'5min', label:'₱2 / 5m'},
+          {id:'15min',label:'₱5 / 15m'},
+          {id:'30min',label:'₱10 / 30m'},
+          {id:'1hr',  label:'₱20 / 1h'},
+          {id:'3hr',  label:'₱60 / 3h'}
+        ]; %>
+        <% stockPlans.forEach(p => { %>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+            <div style="font-size:0.7rem;color:var(--gray-400);margin-bottom:6px;"><%= p.label %></div>
+            <div style="font-size:1.4rem;font-weight:800;color:var(--accent);font-family:var(--mono);"><%= unusedCounts[p.id] || 0 %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+      <a href="/admin/vouchers" class="btn btn-primary">🎫 Manage Vouchers</a>
+      <button class="btn btn-outline" onclick="showModal()">🔑 Change Password</button>
+    </div>
+
+  </div>
+</main>
 
 <!-- Password Modal -->
 <div id="pwModal" class="modal">
   <div class="modal-content">
-    <h2 style="margin-bottom: 20px;">Change Password</h2>
-    <div id="pwMsg" style="margin-bottom: 16px;"></div>
+    <h2 style="margin-bottom:20px;">🔑 Change Password</h2>
+    <div id="pwMsg" style="margin-bottom:12px;min-height:20px;"></div>
     <div class="form-group">
       <input type="password" id="pwCurrent" class="form-input" placeholder="Current password">
     </div>
@@ -153,11 +164,11 @@
       <input type="password" id="pwNew" class="form-input" placeholder="New password">
     </div>
     <div class="form-group">
-      <input type="password" id="pwConfirm" class="form-input" placeholder="Confirm password">
+      <input type="password" id="pwConfirm" class="form-input" placeholder="Confirm new password">
     </div>
-    <div style="display: flex; gap: 10px;">
-      <button class="btn btn-primary" onclick="submitPassword()" style="flex: 1;">Save</button>
-      <button class="btn btn-primary" style="background: rgba(255,255,255,0.1); flex: 1;" onclick="hideModal()">Cancel</button>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="submitPassword()" style="flex:1;">Save</button>
+      <button class="btn btn-outline" style="flex:1;" onclick="hideModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -165,18 +176,13 @@
 <script>
   function showModal() { document.getElementById('pwModal').classList.add('open'); }
   function hideModal() { document.getElementById('pwModal').classList.remove('open'); }
-  
+
   async function submitPassword() {
     const current = document.getElementById('pwCurrent').value;
     const newpass = document.getElementById('pwNew').value;
     const confirm = document.getElementById('pwConfirm').value;
     const msg = document.getElementById('pwMsg');
-    
-    if (!current || !newpass || !confirm) {
-      msg.innerHTML = '<span style="color: #ff6b6b;">Fill all fields</span>';
-      return;
-    }
-    
+    if (!current || !newpass || !confirm) { msg.innerHTML = '<span style="color:var(--danger)">Fill all fields</span>'; return; }
     try {
       const res = await fetch('/admin/change-password', {
         method: 'POST',
@@ -184,17 +190,11 @@
         body: `current=${encodeURIComponent(current)}&newpass=${encodeURIComponent(newpass)}&confirm=${encodeURIComponent(confirm)}`
       });
       const data = await res.json();
-      if (data.success) {
-        msg.innerHTML = '<span style="color: #4ade80;">✅ Password changed!</span>';
-        setTimeout(hideModal, 1500);
-      } else {
-        msg.innerHTML = `<span style="color: #ff6b6b;">❌ ${data.error}</span>`;
-      }
-    } catch(e) {
-      msg.innerHTML = '<span style="color: #ff6b6b;">Error</span>';
-    }
+      if (data.success) { msg.innerHTML = '<span style="color:var(--success)">✅ Password changed!</span>'; setTimeout(hideModal, 1500); }
+      else msg.innerHTML = `<span style="color:var(--danger)">❌ ${data.error}</span>`;
+    } catch(e) { msg.innerHTML = '<span style="color:var(--danger)">Error</span>'; }
   }
-  
+
   async function toggleSleep() {
     try {
       await fetch('/admin/sleep-mode', {
@@ -203,11 +203,8 @@
         body: `enabled=<%= sleepMode ? 'false' : 'true' %>`
       });
       location.reload();
-    } catch(e) {
-      alert('Error updating sleep mode');
-    }
+    } catch(e) { alert('Error updating sleep mode'); }
   }
 </script>
-
 </body>
 </html>
