@@ -4,15 +4,23 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'sams_wifi.db');
-const BACKUP_DIR = path.join(__dirname, '..', 'backups');
-
-let SQL, db;
-
-function saveDb() {
-  const data = db.export();
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
+function resolveDbPath() {
+  const customPath = process.env.DB_PATH;
+  if (customPath) {
+    const dir = require('path').dirname(customPath);
+    try {
+      if (!require('fs').existsSync(dir)) {
+        require('fs').mkdirSync(dir, { recursive: true });
+      }
+      return customPath;
+    } catch (e) {
+      console.warn(`[DB] Cannot use ${customPath}, falling back. (${e.message})`);
+    }
+  }
+  return require('path').join(__dirname, 'sams_wifi.db');
 }
+
+const DB_PATH = resolveDbPath();
 
 async function initDb() {
   SQL = await initSqlJs();
@@ -110,18 +118,13 @@ async function initDb() {
     console.log('[DB] Default admin created. user:admin pass:sams2024 — change immediately!');
   }
 
-  // Create backups directory
   if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
   }
 
   saveDb();
   console.log(`[DB] Ready at ${DB_PATH}`);
-  
-  // Schedule daily backup
   scheduleAutoBackup();
-  
-  // Schedule daily cleanup
   scheduleAutoCleanup();
 }
 
@@ -145,13 +148,13 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── PLANS ────────────────────────────────────────────────────────────────────
+// ─── PLANS — IDs match vouchers page radio values ─────────────────────────────
 const PLANS = [
-  { id: 1, name: '₱2 / 5 min',   price: 2,  duration_ms: 5 * 60 * 1000 },
-  { id: 2, name: '₱5 / 15 min',  price: 5,  duration_ms: 15 * 60 * 1000 },
-  { id: 3, name: '₱10 / 30 min', price: 10, duration_ms: 30 * 60 * 1000 },
-  { id: 4, name: '₱20 / 60 min', price: 20, duration_ms: 60 * 60 * 1000 },
-  { id: 5, name: '₱60 / 3 hrs',  price: 60, duration_ms: 3 * 60 * 60 * 1000 }
+  { id: '5min',  name: '₱2 – 5 Min',   price: 2,  duration_ms: 5  * 60 * 1000 },
+  { id: '15min', name: '₱5 – 15 Min',  price: 5,  duration_ms: 15 * 60 * 1000 },
+  { id: '30min', name: '₱10 – 30 Min', price: 10, duration_ms: 30 * 60 * 1000 },
+  { id: '1hr',   name: '₱20 – 1 Hour', price: 20, duration_ms: 60 * 60 * 1000 },
+  { id: '3hr',   name: '₱60 – 3 Hrs',  price: 60, duration_ms: 3  * 60 * 60 * 1000 },
 ];
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
@@ -163,24 +166,20 @@ const RATE_LIMITS = {
 function checkRateLimit(identifier, action) {
   const limit = RATE_LIMITS[action];
   if (!limit) return { allowed: true };
-
   const windowStart = Date.now() - limit.windowMs;
   const attempts = queryOne(
     `SELECT COUNT(*) as c FROM rate_limits WHERE identifier=? AND action=? AND attempted_at > ?`,
     [identifier, action, windowStart]
   );
   const count = attempts ? attempts.c : 0;
-
   if (count >= limit.maxAttempts) {
     const oldest = queryOne(
       `SELECT MIN(attempted_at) as t FROM rate_limits WHERE identifier=? AND action=? AND attempted_at > ?`,
       [identifier, action, windowStart]
     );
     const retryAfterMs = oldest ? (oldest.t + limit.windowMs - Date.now()) : limit.windowMs;
-    const retryMins = Math.ceil(retryAfterMs / 60000);
-    return { allowed: false, retryMins };
+    return { allowed: false, retryMins: Math.ceil(retryAfterMs / 60000) };
   }
-
   db.run(`INSERT INTO rate_limits (identifier, action, attempted_at) VALUES (?, ?, ?)`,
     [identifier, action, Date.now()]);
   saveDb();
@@ -208,8 +207,7 @@ function buildDeviceId(req) {
 function generateWifiPassword() {
   const words = ['mango','taho','halo','puto','sago','buko','mais','tuyo','tinapay','kape'];
   const nums  = Math.floor(100 + Math.random() * 900);
-  const word  = words[Math.floor(Math.random() * words.length)];
-  return word + nums;
+  return words[Math.floor(Math.random() * words.length)] + nums;
 }
 
 // ─── Voucher generation ───────────────────────────────────────────────────────
@@ -220,15 +218,15 @@ function generateCode() {
   return code;
 }
 
-function generateVouchers(plan, count, batchId, useWifiPassword = false) {
-  const planInfo = PLANS.find(p => p.id === parseInt(plan));
-  if (!planInfo) throw new Error('Invalid plan: ' + plan);
+function generateVouchers(planId, count, batchId, useWifiPassword = false) {
+  const planInfo = PLANS.find(p => p.id === planId);
+  if (!planInfo) throw new Error('Invalid plan: ' + planId);
 
   const wifiPassword = useWifiPassword ? generateWifiPassword() : null;
 
   if (useWifiPassword) {
     db.run(`INSERT OR REPLACE INTO wifi_batches (batch_id, wifi_password, plan, created_at, active) VALUES (?, ?, ?, ?, 1)`,
-      [batchId, wifiPassword, plan, Date.now()]);
+      [batchId, wifiPassword, planId, Date.now()]);
   }
 
   const generated = [];
@@ -238,7 +236,7 @@ function generateVouchers(plan, count, batchId, useWifiPassword = false) {
     const code = generateCode();
     if (!queryOne(`SELECT id FROM vouchers WHERE code = ?`, [code])) {
       run(`INSERT INTO vouchers (code, plan, price, duration_ms, batch_id, wifi_password, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [code, plan, planInfo.price, planInfo.duration_ms, batchId, wifiPassword, Date.now()]);
+        [code, planId, planInfo.price, planInfo.duration_ms, batchId, wifiPassword, Date.now()]);
       generated.push(code);
     }
   }
@@ -250,10 +248,10 @@ function redeemVoucher(code, deviceId) {
   const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
   if (!voucher) return { success: false, message: 'Code not found. Check your voucher and try again.' };
   if (voucher.refunded) return { success: false, message: 'This voucher has been refunded.' };
-  if (voucher.status === 'expired') return { success: false, message: 'This voucher has already been used.' };
+  if (voucher.status === 'expired') return { success: false, message: 'This voucher has already expired.' };
   if (voucher.status === 'active') {
     if (voucher.device_id === deviceId) return { success: true, voucher };
-    return { success: false, message: 'This voucher is already being used on another device.' };
+    return { success: false, message: 'This voucher is already in use on another device.' };
   }
   const now = Date.now();
   const expiresAt = now + voucher.duration_ms;
@@ -282,9 +280,7 @@ function refundVoucher(code) {
   const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
   if (!voucher) return { success: false, error: 'Voucher not found' };
   if (voucher.refunded) return { success: false, error: 'Already refunded' };
-  
   run(`UPDATE vouchers SET refunded=1, status='unused', device_id=NULL, started_at=NULL, expires_at=NULL WHERE id=?`, [voucher.id]);
-  
   return { success: true, refunded_amount: voucher.price };
 }
 
@@ -303,7 +299,6 @@ function getSalesStats() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayMs = today.getTime();
   const weekMs  = todayMs - 6 * 24 * 60 * 60 * 1000;
-
   const totalSales = queryOne(`SELECT COALESCE(SUM(price),0) as total, COUNT(*) as count FROM sessions_log`) || { total: 0, count: 0 };
   const todaySales = queryOne(`SELECT COALESCE(SUM(price),0) as total, COUNT(*) as count FROM sessions_log WHERE started_at >= ?`, [todayMs]) || { total: 0, count: 0 };
   const weekSales  = queryOne(`SELECT COALESCE(SUM(price),0) as total, COUNT(*) as count FROM sessions_log WHERE started_at >= ?`, [weekMs]) || { total: 0, count: 0 };
@@ -311,7 +306,6 @@ function getSalesStats() {
   const dailyBreakdown = query(`
     SELECT date(started_at/1000, 'unixepoch', 'localtime') as day, SUM(price) as revenue, COUNT(*) as sessions
     FROM sessions_log WHERE started_at >= ? GROUP BY day ORDER BY day ASC`, [weekMs]);
-
   return { totalSales, todaySales, weekSales, byPlan, dailyBreakdown };
 }
 
@@ -342,29 +336,25 @@ function updateAdminPassword(username, newHash) {
 function getVoucherCounts() {
   try {
     return {
-      all:     (queryOne(`SELECT COUNT(*) as c FROM vouchers`) || {c:0}).c,
-      unused:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused'`) || {c:0}).c,
-      active:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='active'`) || {c:0}).c,
-      expired: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='expired'`) || {c:0}).c,
-      refunded: 0
+      all:      (queryOne(`SELECT COUNT(*) as c FROM vouchers`) || {c:0}).c,
+      unused:   (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused'`) || {c:0}).c,
+      active:   (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='active'`) || {c:0}).c,
+      expired:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='expired'`) || {c:0}).c,
+      refunded: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE refunded=1`) || {c:0}).c,
     };
-  } catch(e) {
-    return { all: 0, unused: 0, active: 0, expired: 0, refunded: 0 };
-  }
+  } catch(e) { return { all: 0, unused: 0, active: 0, expired: 0, refunded: 0 }; }
 }
 
 function getUnusedCounts() {
   try {
     return {
-      '5min':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='5min'`) || {c:0}).c,
+      '5min':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='5min'`)  || {c:0}).c,
       '15min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='15min'`) || {c:0}).c,
       '30min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='30min'`) || {c:0}).c,
-      '60min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='60min'`) || {c:0}).c,
-      '3hrs':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='3hrs'`) || {c:0}).c,
+      '1hr':   (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='1hr'`)   || {c:0}).c,
+      '3hr':   (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='3hr'`)   || {c:0}).c,
     };
-  } catch(e) {
-    return { '5min': 0, '15min': 0, '30min': 0, '60min': 0, '3hrs': 0 };
-  }
+  } catch(e) { return { '5min': 0, '15min': 0, '30min': 0, '1hr': 0, '3hr': 0 }; }
 }
 
 function getWifiBatches() {
@@ -373,14 +363,12 @@ function getWifiBatches() {
 
 // ─── Sleep Mode ───────────────────────────────────────────────────────────────
 function setSleepMode(val) {
-  db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
   db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('sleep_mode', ?)`, [val ? '1' : '0']);
   saveDb();
 }
 
 function getSleepMode() {
   try {
-    db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
     const row = queryOne(`SELECT value FROM settings WHERE key='sleep_mode'`);
     return row ? row.value === '1' : false;
   } catch(e) { return false; }
@@ -400,12 +388,11 @@ function markNotificationRead(id) {
   run(`UPDATE notifications SET read=1 WHERE id=?`, [id]);
 }
 
-// ─── Free Trial Tracking ──────────────────────────────────────────────────────
+// ─── Connection Tracking ──────────────────────────────────────────────────────
 function trackConnection(mac) {
-  const existing = queryOne(`SELECT id FROM connections WHERE mac=? AND has_voucher=0`, [mac]);
+  const existing = queryOne(`SELECT id FROM connections WHERE mac=?`, [mac]);
   if (!existing) {
-    run(`INSERT INTO connections (mac, connected_at, has_voucher) VALUES (?, ?, 0)`,
-      [mac, Date.now()]);
+    run(`INSERT INTO connections (mac, connected_at, has_voucher) VALUES (?, ?, 0)`, [mac, Date.now()]);
   }
 }
 
@@ -429,8 +416,6 @@ function createBackup() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `backup-${timestamp}.json`;
     const filepath = path.join(BACKUP_DIR, filename);
-
-    // Export all data
     const vouchers = query(`SELECT * FROM vouchers`);
     const sessions = query(`SELECT * FROM sessions_log`);
     const backupData = {
@@ -443,23 +428,14 @@ function createBackup() {
         total_revenue: sessions.reduce((sum, s) => sum + s.price, 0)
       }
     };
-
     fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
-    
-    // Record backup
     run(`INSERT INTO backups (filename, created_at, size) VALUES (?, ?, ?)`,
       [filename, Date.now(), fs.statSync(filepath).size]);
-
-    // Keep only last 30 backups
-    const backups = query(`SELECT filename FROM backups ORDER BY created_at DESC LIMIT 30, 1000`);
-    backups.forEach(b => {
-      try {
-        fs.unlinkSync(path.join(BACKUP_DIR, b.filename));
-        db.run(`DELETE FROM backups WHERE filename=?`, [b.filename]);
-      } catch(e) {}
+    const old = query(`SELECT filename FROM backups ORDER BY created_at DESC LIMIT 30, 1000`);
+    old.forEach(b => {
+      try { fs.unlinkSync(path.join(BACKUP_DIR, b.filename)); db.run(`DELETE FROM backups WHERE filename=?`, [b.filename]); } catch(e) {}
     });
     saveDb();
-
     console.log(`[BACKUP] Created: ${filename}`);
     return { success: true, filename, size: fs.statSync(filepath).size };
   } catch(e) {
@@ -474,47 +450,26 @@ function getBackups() {
 
 function cleanupExpiredVouchers() {
   const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-  const deleted = db.run(`DELETE FROM vouchers WHERE status='expired' AND created_at < ?`, [thirtyDaysAgo]);
-  
-  const oldConnections = Date.now() - (24 * 60 * 60 * 1000);
-  db.run(`DELETE FROM connections WHERE connected_at < ?`, [oldConnections]);
-  
-  const oldNotifications = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  db.run(`DELETE FROM notifications WHERE created_at < ?`, [oldNotifications]);
-  
+  db.run(`DELETE FROM vouchers WHERE status='expired' AND created_at < ?`, [thirtyDaysAgo]);
+  db.run(`DELETE FROM connections WHERE connected_at < ?`, [Date.now() - 24 * 60 * 60 * 1000]);
+  db.run(`DELETE FROM notifications WHERE created_at < ?`, [Date.now() - 7 * 24 * 60 * 60 * 1000]);
   saveDb();
   console.log(`[CLEANUP] Removed old expired vouchers`);
 }
 
 function scheduleAutoBackup() {
-  // Backup daily at 3 AM
   const now = new Date();
-  const target = new Date();
-  target.setHours(3, 0, 0, 0);
+  const target = new Date(); target.setHours(3, 0, 0, 0);
   if (target <= now) target.setDate(target.getDate() + 1);
-  
-  const delay = target - now;
-  setTimeout(() => {
-    createBackup();
-    setInterval(createBackup, 24 * 60 * 60 * 1000);
-  }, delay);
-  
+  setTimeout(() => { createBackup(); setInterval(createBackup, 24 * 60 * 60 * 1000); }, target - now);
   console.log(`[BACKUP] Scheduled daily backup`);
 }
 
 function scheduleAutoCleanup() {
-  // Cleanup daily at 4 AM
   const now = new Date();
-  const target = new Date();
-  target.setHours(4, 0, 0, 0);
+  const target = new Date(); target.setHours(4, 0, 0, 0);
   if (target <= now) target.setDate(target.getDate() + 1);
-  
-  const delay = target - now;
-  setTimeout(() => {
-    cleanupExpiredVouchers();
-    setInterval(cleanupExpiredVouchers, 24 * 60 * 60 * 1000);
-  }, delay);
-  
+  setTimeout(() => { cleanupExpiredVouchers(); setInterval(cleanupExpiredVouchers, 24 * 60 * 60 * 1000); }, target - now);
   console.log(`[CLEANUP] Scheduled daily cleanup`);
 }
 
