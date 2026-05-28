@@ -6,159 +6,277 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .dashboard {
-      max-width: 500px;
-      margin: 60px auto 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 16px;
-      padding: 40px 30px;
-      color: white;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    body {
+      background: var(--blue-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
-    .dashboard h1 {
-      font-size: 14px;
-      font-weight: 500;
-      opacity: 0.9;
-      margin-bottom: 20px;
+    .portal-card {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      backdrop-filter: blur(20px);
+      text-align: center;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--success);
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    /* Circular timer */
+    .timer-wrap {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 28px;
+    }
+    .timer-svg { transform: rotate(-90deg); }
+    .timer-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+    .timer-ring {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 502;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 0.5s;
+    }
+    .timer-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-time {
+      font-size: 2.4rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .timer-label {
+      font-size: 0.65rem;
       letter-spacing: 2px;
       text-transform: uppercase;
+      color: var(--gray-400);
+      margin-top: 4px;
     }
-    .time-display {
-      font-size: 48px;
-      font-weight: bold;
-      margin: 20px 0;
-      font-family: 'JetBrains Mono', monospace;
-      letter-spacing: 2px;
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
     }
-    .plan-info {
-      display: flex;
-      justify-content: space-around;
-      margin: 30px 0;
-      padding: 20px 0;
-      border-top: 1px solid rgba(255,255,255,0.2);
-      border-bottom: 1px solid rgba(255,255,255,0.2);
+    .info-cell {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-sm);
+      padding: 14px 12px;
     }
-    .plan-info div {
-      flex: 1;
-    }
-    .plan-info label {
-      font-size: 12px;
-      opacity: 0.8;
-      display: block;
-      margin-bottom: 8px;
-    }
-    .plan-info value {
-      font-size: 18px;
+    .info-cell .lbl {
+      font-size: 0.68rem;
       font-weight: 600;
-      display: block;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 6px;
     }
-    .connected-time {
-      margin-top: 20px;
-      font-size: 13px;
-      opacity: 0.85;
+    .info-cell .val {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--white);
+      font-family: var(--mono);
     }
-    .warning {
-      background: #ff6b6b;
-      border-radius: 12px;
-      padding: 15px;
-      margin: 20px auto;
-      max-width: 500px;
-      font-size: 14px;
-      font-weight: 500;
+    .info-cell.full { grid-column: 1 / -1; }
+    .keep-open-note {
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .warning-bar {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
       animation: pulse 1s infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
-    }
-    .logout-btn {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      border: 2px solid white;
-      padding: 12px 30px;
-      border-radius: 8px;
-      font-size: 14px;
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+    .btn-logout {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      color: var(--gray-400);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 20px;
-      transition: all 0.3s;
+      transition: all 0.2s;
     }
-    .logout-btn:hover {
-      background: white;
-      color: #667eea;
+    .btn-logout:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .footer-note {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--gray-400);
     }
   </style>
 </head>
 <body>
-  <div class="dashboard">
-    <h1>⏱️ Time Remaining</h1>
-    <div class="time-display" id="timer">--:--</div>
-    
-    <div class="plan-info">
-      <div>
-        <label>PLAN</label>
-        <value><%= voucher.plan %></value>
-      </div>
-      <div>
-        <label>PRICE</label>
-        <value>₱<%= voucher.price %></value>
+  <div class="portal-card">
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      Konektado / Connected
+    </div>
+
+    <!-- Circular timer -->
+    <div class="timer-wrap">
+      <svg class="timer-svg" width="180" height="180" viewBox="0 0 180 180">
+        <circle class="timer-bg" cx="90" cy="90" r="80"/>
+        <circle class="timer-ring" id="timerRing" cx="90" cy="90" r="80"/>
+      </svg>
+      <div class="timer-inner">
+        <div class="timer-time" id="timerText">--:--</div>
+        <div class="timer-label">Natitira / Remaining</div>
       </div>
     </div>
 
-    <div class="connected-time" id="connectedTime"></div>
+    <div id="warningBar" class="warning-bar">⚠️ 2 minuto na lang! / 2 minutes left!</div>
 
-    <div id="warningBox"></div>
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="lbl">Voucher Code</div>
+        <div class="val"><%= voucher.code %></div>
+      </div>
+      <div class="info-cell">
+        <div class="lbl">Plano / Plan</div>
+        <div class="val"><%= voucher.plan %></div>
+      </div>
+      <div class="info-cell">
+        <div class="lbl">Bayad / Price</div>
+        <div class="val">₱<%= voucher.price %></div>
+      </div>
+      <div class="info-cell">
+        <div class="lbl">Natapos sa / Expires</div>
+        <div class="val" id="expiryTime">--:--</div>
+      </div>
+      <div class="info-cell full">
+        <div class="lbl">Katayuan / Status</div>
+        <div class="val" style="color:var(--success);">● Aktibo / Active</div>
+      </div>
+    </div>
 
-    <form method="POST" action="/logout" style="margin-top: 20px;">
-      <button type="submit" class="logout-btn">Disconnect</button>
+    <div class="keep-open-note">
+      📌 Huwag isara ang tab na ito habang konektado.<br>
+      <small>Keep this tab open while connected.</small>
+    </div>
+
+    <form method="POST" action="/logout">
+      <button type="submit" class="btn-logout">📴 Mag-logout / Disconnect</button>
     </form>
   </div>
 
+  <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
+
   <script>
-    const expiresAt = <%= voucher.expires_at %>;
-    const warningThreshold = 2 * 60 * 1000; // 2 minutes
+    const expiresAt  = <%= voucher.expires_at %>;
+    const startedAt  = <%= voucher.started_at || Date.now() %>;
+    const totalMs    = expiresAt - startedAt;
+    const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65
+
+    const ring       = document.getElementById('timerRing');
+    const timerText  = document.getElementById('timerText');
+    const warningBar = document.getElementById('warningBar');
+    const expiryTime = document.getElementById('expiryTime');
+
+    // Show expiry time
+    expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+
+    ring.style.strokeDasharray  = CIRCUMFERENCE;
+    ring.style.strokeDashoffset = 0;
+
+    let sessionCheckInterval;
 
     function updateTimer() {
       const now = Date.now();
-      const msRemaining = expiresAt - now;
+      const ms  = expiresAt - now;
 
-      if (msRemaining <= 0) {
-        document.getElementById('timer').textContent = '00:00';
-        document.getElementById('timer').style.color = '#ff6b6b';
+      if (ms <= 0) {
+        timerText.textContent = '00:00';
+        timerText.style.color = 'var(--danger)';
+        ring.style.strokeDashoffset = CIRCUMFERENCE;
+        ring.style.stroke = 'var(--danger)';
+        window.location.href = '/expired';
         return;
       }
 
-      const mins = Math.floor(msRemaining / 60000);
-      const secs = Math.floor((msRemaining % 60000) / 1000);
-      document.getElementById('timer').textContent = 
-        String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      const mins = Math.floor(ms / 60000);
+      const secs = Math.floor((ms % 60000) / 1000);
+      timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 
-      // Show warning if 2 minutes or less
-      const warningBox = document.getElementById('warningBox');
-      if (msRemaining <= warningThreshold && msRemaining > 0) {
-        if (!warningBox.innerHTML) {
-          warningBox.innerHTML = '⚠️ <strong>2 minutes left!</strong> Your connection will end soon.';
-          warningBox.className = 'warning';
-        }
-      } else if (msRemaining > warningThreshold) {
-        warningBox.innerHTML = '';
-        warningBox.className = '';
-      }
+      // Progress ring
+      const progress = ms / totalMs;
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
-      // Change color to red when under 1 minute
-      if (msRemaining < 60000) {
-        document.getElementById('timer').style.color = '#ff6b6b';
+      if (ms < 60000) {
+        timerText.style.color = 'var(--danger)';
+        ring.style.stroke = 'var(--danger)';
+      } else if (ms < 2 * 60000) {
+        timerText.style.color = '#fcd34d';
+        ring.style.stroke = '#fcd34d';
+        warningBar.style.display = 'block';
       }
     }
 
-    // Update every 500ms for smooth countdown
+    // Poll server every 15s to verify session is still valid
+    async function checkSession() {
+      try {
+        const res  = await fetch('/api/session-status');
+        const data = await res.json();
+        if (data.status === 'expired' || data.status === 'no_session' || data.status === 'device_mismatch') {
+          window.location.href = '/expired';
+        }
+      } catch(e) { /* network hiccup — keep running */ }
+    }
+
     setInterval(updateTimer, 500);
     updateTimer();
 
-    // Show connected time
-    const connectedTime = new Date(<%= voucher.started_at %>).toLocaleTimeString();
-    document.getElementById('connectedTime').textContent = '📍 Connected: ' + connectedTime;
+    sessionCheckInterval = setInterval(checkSession, 15000);
+    checkSession();
   </script>
 </body>
 </html>
