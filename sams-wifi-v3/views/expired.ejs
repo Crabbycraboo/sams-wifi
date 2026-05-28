@@ -7,114 +7,95 @@
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body {
+      background: var(--blue-900);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       padding: 20px;
       text-align: center;
     }
-    .expired-wrapper {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 420px;
-    }
     .expired-icon {
-      font-size: 5rem;
+      font-size: 4rem;
       margin-bottom: 20px;
       animation: float 3s ease-in-out infinite;
     }
-    @keyframes float {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-12px); }
-    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
     .expired-card {
+      width: 100%;
+      max-width: 420px;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(239,68,68,0.2);
       border-radius: var(--radius);
       padding: 36px 28px;
       backdrop-filter: blur(20px);
-      margin-bottom: 20px;
     }
     .expired-card h1 {
       font-size: 1.8rem;
-      margin-bottom: 8px;
       color: var(--danger);
+      margin-bottom: 8px;
     }
     .expired-card .subtitle {
       color: var(--gray-400);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       margin-bottom: 24px;
       line-height: 1.6;
     }
-    .price-mini {
+    .plans-mini {
       display: grid;
-      grid-template-columns: repeat(3,1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      margin: 20px 0;
+      margin: 20px 0 24px;
     }
-    .price-mini-item {
+    .plan-mini {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: var(--radius-sm);
       padding: 10px 6px;
     }
-    .price-mini-item .amt {
+    .plan-mini .amt {
       font-size: 1.2rem;
       font-weight: 800;
       color: var(--accent);
       font-family: var(--mono);
     }
-    .price-mini-item .dur {
-      font-size: 0.72rem;
+    .plan-mini .dur {
+      font-size: 0.7rem;
       color: var(--gray-400);
       margin-top: 2px;
+    }
+    .footer-note {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--gray-400);
     }
   </style>
 </head>
 <body>
-  <div class="bg-network"></div>
-  <div class="expired-wrapper">
-    <div class="expired-icon">⏱️</div>
-
-    <div class="expired-card">
-      <h1>Natapos na!</h1>
-      <p class="subtitle">
-        Your session has expired.<br>
-        <strong style="color:var(--white);">Naubos na ang iyong oras.</strong>
-      </p>
-
-      <p style="font-size:0.85rem; color:var(--gray-400); margin-bottom:12px;">
-        Bumili ng bagong voucher para makakonekta ulit.<br>
-        <small>Purchase a new voucher to reconnect.</small>
-      </p>
-
-      <div class="price-mini">
-        <div class="price-mini-item">
-          <div class="amt">₱5</div>
-          <div class="dur">30 Minuto</div>
-        </div>
-        <div class="price-mini-item">
-          <div class="amt">₱10</div>
-          <div class="dur">1 Oras</div>
-        </div>
-        <div class="price-mini-item">
-          <div class="amt">₱20</div>
-          <div class="dur">3 Oras</div>
-        </div>
-      </div>
-
-      <a href="/" class="btn btn-primary btn-lg" style="margin-top:8px;">
-        🔄 Kumuha ng Bagong Code / Get New Voucher
-      </a>
-    </div>
-
-    <p style="font-size:0.8rem; color:var(--gray-400);">
-      📍 Sam's WiFi – Taytay, Rizal<br>
-      May tanong? Makipag-ugnayan kay Sam.
+  <div class="expired-icon">⏱️</div>
+  <div class="expired-card">
+    <h1>Natapos na!</h1>
+    <p class="subtitle">
+      Your session has expired.<br>
+      <strong style="color:var(--white);">Naubos na ang iyong oras.</strong>
     </p>
+    <p style="font-size:0.82rem;color:var(--gray-400);margin-bottom:8px;">
+      Bumili ng bagong voucher para makakonekta ulit.<br>
+      <small>Purchase a new voucher to reconnect.</small>
+    </p>
+    <div class="plans-mini">
+      <div class="plan-mini"><div class="amt">₱5</div><div class="dur">15 Min</div></div>
+      <div class="plan-mini"><div class="amt">₱10</div><div class="dur">30 Min</div></div>
+      <div class="plan-mini"><div class="amt">₱20</div><div class="dur">1 Oras</div></div>
+    </div>
+    <a href="/" class="btn btn-primary" style="width:100%;justify-content:center;">
+      🔄 Kumuha ng Bagong Code / Get New Voucher
+    </a>
+  </div>
+  <div class="footer-note">
+    📍 Sam's WiFi – Taytay, Rizal<br>
+    May tanong? Makipag-ugnayan kay Sam.
   </div>
 </body>
 </html>
