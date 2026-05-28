@@ -340,23 +340,31 @@ function updateAdminPassword(username, newHash) {
 }
 
 function getVoucherCounts() {
-  return {
-    all:     (queryOne(`SELECT COUNT(*) as c FROM vouchers`) || {c:0}).c,
-    unused:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused'`) || {c:0}).c,
-    active:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='active'`) || {c:0}).c,
-    expired: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='expired'`) || {c:0}).c,
-    refunded: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE refunded=1`) || {c:0}).c,
-  };
+  try {
+    return {
+      all:     (queryOne(`SELECT COUNT(*) as c FROM vouchers`) || {c:0}).c,
+      unused:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused'`) || {c:0}).c,
+      active:  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='active'`) || {c:0}).c,
+      expired: (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='expired'`) || {c:0}).c,
+      refunded: 0
+    };
+  } catch(e) {
+    return { all: 0, unused: 0, active: 0, expired: 0, refunded: 0 };
+  }
 }
 
 function getUnusedCounts() {
-  return {
-    '5min':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='5min'`) || {c:0}).c,
-    '15min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='15min'`) || {c:0}).c,
-    '30min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='30min'`) || {c:0}).c,
-    '60min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='60min'`) || {c:0}).c,
-    '3hrs':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='3hrs'`) || {c:0}).c,
-  };
+  try {
+    return {
+      '5min':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='5min'`) || {c:0}).c,
+      '15min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='15min'`) || {c:0}).c,
+      '30min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='30min'`) || {c:0}).c,
+      '60min': (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='60min'`) || {c:0}).c,
+      '3hrs':  (queryOne(`SELECT COUNT(*) as c FROM vouchers WHERE status='unused' AND plan='3hrs'`) || {c:0}).c,
+    };
+  } catch(e) {
+    return { '5min': 0, '15min': 0, '30min': 0, '60min': 0, '3hrs': 0 };
+  }
 }
 
 function getWifiBatches() {
