@@ -4,23 +4,15 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-function resolveDbPath() {
-  const customPath = process.env.DB_PATH;
-  if (customPath) {
-    const dir = require('path').dirname(customPath);
-    try {
-      if (!require('fs').existsSync(dir)) {
-        require('fs').mkdirSync(dir, { recursive: true });
-      }
-      return customPath;
-    } catch (e) {
-      console.warn(`[DB] Cannot use ${customPath}, falling back. (${e.message})`);
-    }
-  }
-  return require('path').join(__dirname, 'sams_wifi.db');
-}
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'sams_wifi.db');
+const BACKUP_DIR = path.join(__dirname, '..', 'backups');
 
-const DB_PATH = resolveDbPath();
+let SQL, db;
+
+function saveDb() {
+  const data = db.export();
+  fs.writeFileSync(DB_PATH, Buffer.from(data));
+}
 
 async function initDb() {
   SQL = await initSqlJs();
