@@ -360,3 +360,58 @@
   .codes-grid { grid-template-columns: repeat(2,1fr); }
   .plan-selector { grid-template-columns: 1fr; }
 }
+
+/* ─── Stat cards ──────────────────────────────────────────────────────────── */
+.stat-card {
+  padding: 20px;
+}
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-family: var(--mono);
+  line-height: 1;
+}
+
+/* ─── Modal ───────────────────────────────────────────────────────────────── */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal.open { display: flex; }
+.modal-content {
+  background: var(--blue-800);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 32px;
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 400px;
+}
+.form-group { margin-bottom: 16px; }
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.form-input:focus { outline: none; border-color: var(--accent); }
+.btn-sm { padding: 7px 14px; font-size: 0.82rem; }
