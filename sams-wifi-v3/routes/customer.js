@@ -1,4 +1,4 @@
-// routes/customer.js — with notifications + free trial
+// routes/customer.js
 const express = require('express');
 const router = express.Router();
 const { redeemVoucher, PLANS, checkRateLimit, buildDeviceId, getSleepMode, createNotification, trackConnection, markVoucherPaid } = require('../db/database');
@@ -11,13 +11,12 @@ const GCASH = {
 // ─── Home / Login ─────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
   if (req.session.voucher) return res.redirect('/portal');
-  const sleepMode = getSleepMode();
   res.render('login', {
     title: "Sam's WiFi",
     plans: PLANS,
     error: null,
     code: '',
-    sleepMode,
+    sleepMode: getSleepMode(),
     gcash: GCASH,
   });
 });
@@ -29,10 +28,8 @@ router.post('/connect', (req, res) => {
   const deviceId = buildDeviceId(req);
   const sleepMode = getSleepMode();
 
-  // Track this connection for free trial
   trackConnection(deviceId);
 
-  // Rate limit — 10 attempts per 5 minutes
   const rateCheck = checkRateLimit(ip, 'code_attempt');
   if (!rateCheck.allowed) {
     return res.render('login', {
@@ -60,19 +57,17 @@ router.post('/connect', (req, res) => {
     });
   }
 
-  // Sleep mode: block ₱2 / 5min vouchers
+  // Sleep mode: block cheapest plan
   if (sleepMode && result.voucher.plan === '5min') {
     return res.render('login', {
       title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: '⚠️ Si Sam ay natutulog. Ang pinakamababang plano ngayon ay ₱5. Mag-GCash at makipag-ugnayan para sa iyong code. (Sam is asleep. Minimum plan is ₱5. Pay via GCash and message for your code.)',
+      error: '😴 Si Sam ay natutulog. Pinakamababang plano: ₱5. Mag-GCash at makipag-ugnayan para sa code. (Sam is asleep. Min plan is ₱5 – pay via GCash.)',
       code: ''
     });
   }
 
-  // Mark as paid in free trial tracking
   markVoucherPaid(deviceId);
 
-  // Create notification for admin
   createNotification('sale', `New sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
     code: result.voucher.code,
     price: result.voucher.price,
@@ -84,6 +79,7 @@ router.post('/connect', (req, res) => {
     plan: result.voucher.plan,
     price: result.voucher.price,
     expires_at: result.voucher.expires_at,
+    started_at: result.voucher.started_at || Date.now(),
     device_id: deviceId,
     wifi_password: result.voucher.wifi_password || null,
   };
@@ -94,28 +90,22 @@ router.post('/connect', (req, res) => {
 // ─── Portal ───────────────────────────────────────────────────────────────────
 router.get('/portal', (req, res) => {
   if (!req.session.voucher) return res.redirect('/');
-
   const v = req.session.voucher;
-  const now = Date.now();
-
-  const currentDevice = buildDeviceId(req);
-  if (currentDevice !== v.device_id) {
+  if (buildDeviceId(req) !== v.device_id) {
     req.session.destroy();
     return res.redirect('/');
   }
-
-  if (now >= v.expires_at) {
+  if (Date.now() >= v.expires_at) {
     req.session.destroy();
     return res.redirect('/expired');
   }
-
-  res.render('portal', { title: "Sam's WiFi - Connected", voucher: v, plans: PLANS });
+  res.render('portal', { title: "Sam's WiFi – Konektado", voucher: v, plans: PLANS });
 });
 
 // ─── Expired ──────────────────────────────────────────────────────────────────
 router.get('/expired', (req, res) => {
   req.session.destroy(() => {});
-  res.render('expired', { title: "Sam's WiFi - Session Expired", plans: PLANS });
+  res.render('expired', { title: "Sam's WiFi – Natapos na", plans: PLANS });
 });
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
