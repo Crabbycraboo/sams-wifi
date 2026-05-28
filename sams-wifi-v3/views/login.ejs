@@ -6,232 +6,237 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .login-container {
-      max-width: 600px;
-      margin: 60px auto 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 16px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    body {
+      background: var(--blue-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
-
-    .login-title {
+    .login-card {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      backdrop-filter: blur(20px);
+    }
+    .brand {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 32px;
     }
-
-    .login-title h1 {
-      font-size: 32px;
-      margin: 0;
-      color: white;
+    .brand-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .brand h1 { font-size: 2rem; margin: 0; }
+    .brand h1 span { color: var(--accent); }
+    .brand-sub { font-size: 0.85rem; color: var(--gray-400); margin-top: 4px; }
+    .plans-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 12px;
     }
-
-    .login-subtitle {
-      font-size: 14px;
-      color: rgba(255,255,255,0.8);
-      margin-top: 8px;
-    }
-
     .plans-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 30px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
     }
-
     .plan-card {
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 12px;
-      padding: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
       text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      color: white;
+      cursor: default;
     }
-
-    .plan-card:hover {
-      background: rgba(255,255,255,0.25);
-      border-color: rgba(255,255,255,0.6);
-      transform: translateY(-2px);
-    }
-
-    .plan-card.active {
-      background: rgba(255,255,255,0.3);
-      border-color: white;
-      box-shadow: 0 4px 15px rgba(255,255,255,0.2);
-    }
-
     .plan-price {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 4px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-family: var(--mono);
     }
-
-    .plan-duration {
-      font-size: 12px;
-      opacity: 0.9;
+    .plan-dur {
+      font-size: 0.7rem;
+      color: var(--gray-400);
+      margin-top: 2px;
     }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
     .form-label {
       display: block;
-      font-size: 14px;
-      color: rgba(255,255,255,0.9);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
       margin-bottom: 8px;
-      font-weight: 500;
     }
-
     .form-input {
       width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      background: rgba(255,255,255,0.95);
-      color: #333;
-      box-sizing: border-box;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-sm);
+      font-size: 1.1rem;
+      font-family: var(--mono);
+      color: var(--white);
+      letter-spacing: 2px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
     }
-
-    .form-input::placeholder {
-      color: #999;
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
     }
-
+    .form-input::placeholder { color: var(--gray-400); letter-spacing: 1px; }
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      margin-top: 6px;
+    }
     .btn-connect {
       width: 100%;
-      padding: 14px;
-      background: white;
-      color: #667eea;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--accent), #0090b3);
+      color: var(--blue-900);
       border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s;
+      margin-top: 20px;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
     }
-
     .btn-connect:hover {
-      background: #f0f0f0;
       transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(255,255,255,0.3);
+      box-shadow: 0 8px 24px rgba(0,212,255,0.3);
     }
-
     .error-alert {
-      background: #ff6b6b;
-      color: white;
-      padding: 12px;
-      border-radius: 8px;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
       margin-bottom: 20px;
-      font-size: 14px;
+      font-size: 0.85rem;
+      line-height: 1.5;
     }
-
-    .gcash-section {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 12px;
-      padding: 16px;
+    .gcash-box {
       margin-top: 24px;
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.15);
+      border-radius: var(--radius-sm);
+      padding: 18px;
       text-align: center;
-      color: rgba(255,255,255,0.9);
     }
-
     .gcash-label {
-      font-size: 12px;
+      font-size: 0.75rem;
+      color: var(--gray-400);
       text-transform: uppercase;
-      opacity: 0.8;
+      letter-spacing: 1px;
       margin-bottom: 8px;
     }
-
-    .gcash-number {
-      font-size: 20px;
-      font-weight: bold;
-      font-family: 'JetBrains Mono', monospace;
-      margin: 8px 0;
+    .gcash-num {
+      font-size: 1.4rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      color: var(--accent);
+      letter-spacing: 2px;
     }
-
     .gcash-name {
-      font-size: 13px;
-      opacity: 0.85;
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      margin-top: 4px;
     }
-
-    .hint {
-      font-size: 12px;
-      color: rgba(255,255,255,0.8);
-      margin-top: 12px;
+    .gcash-note {
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .sleep-banner {
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.25);
+      color: #fcd34d;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
       text-align: center;
+      margin-bottom: 20px;
+    }
+    .footer-note {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--gray-400);
     }
   </style>
 </head>
-<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; margin: 0;">
-
-  <div class="login-container">
-    <div class="login-title">
-      <h1>📶 Sam's WiFi</h1>
-      <p class="login-subtitle">Voucher Code Required</p>
+<body>
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-icon">📶</div>
+      <h1>Sam's <span>WiFi</span></h1>
+      <div class="brand-sub">Taytay, Rizal</div>
     </div>
+
+    <% if (sleepMode) { %>
+      <div class="sleep-banner">
+        😴 Sleep Mode – Minimum plan is ₱5. Pay via GCash and message for your code.
+      </div>
+    <% } %>
 
     <% if (error) { %>
       <div class="error-alert">⚠️ <%= error %></div>
     <% } %>
 
-    <div style="margin-bottom: 20px;">
-      <p style="color: rgba(255,255,255,0.9); font-size: 14px; text-align: center; margin: 0 0 16px 0;">
-        <% if (sleepMode) { %>
-          😴 Sleep Mode: Pay via GCash & message for code
-        <% } else { %>
-          Choose your plan & enter voucher code
-        <% } %>
-      </p>
+    <div class="plans-label">Available Plans</div>
+    <div class="plans-grid">
+      <% plans.forEach(plan => { %>
+        <div class="plan-card">
+          <div class="plan-price"><%= plan.name.split('–')[0].trim() %></div>
+          <div class="plan-dur"><%= plan.name.split('–')[1] ? plan.name.split('–')[1].trim() : '' %></div>
+        </div>
+      <% }) %>
     </div>
 
     <form method="POST" action="/connect">
-      <!-- Plans Display -->
-      <div class="plans-grid">
-        <% plans.forEach(plan => { %>
-          <div class="plan-card <%= code === plan.name ? 'active' : '' %>">
-            <div class="plan-price"><%= plan.name.split(' / ')[0] %></div>
-            <div class="plan-duration"><%= plan.name.split(' / ')[1] %></div>
-          </div>
-        <% }) %>
-      </div>
-
-      <!-- Voucher Code Input -->
-      <div class="form-group">
+      <div style="margin-bottom: 20px;">
         <label class="form-label">Voucher Code</label>
-        <input 
-          type="text" 
-          name="code" 
-          class="form-input" 
+        <input
+          type="text"
+          name="code"
+          class="form-input"
           placeholder="SAM-XXXX"
           value="<%= code %>"
           maxlength="8"
           required
           autocomplete="off"
+          autocorrect="off"
+          autocapitalize="characters"
         >
-        <div class="hint">Format: SAM-XXXX (found on your voucher slip)</div>
+        <div class="form-hint">📋 Enter the code from your voucher slip</div>
       </div>
-
-      <!-- Connect Button -->
-      <button type="submit" class="btn-connect">🔗 Connect</button>
+      <button type="submit" class="btn-connect">🔗 Kumonekta / Connect</button>
     </form>
 
-    <!-- GCash Section -->
-    <div class="gcash-section">
-      <div class="gcash-label">💳 Don't have a code?</div>
-      <div class="gcash-label" style="opacity: 1; font-weight: 600; margin-bottom: 12px;">Pay via GCash</div>
-      <div class="gcash-number"><%= gcash.number %></div>
+    <div class="gcash-box">
+      <div class="gcash-label">💳 Walang code? / No code?</div>
+      <div class="gcash-num"><%= gcash.number %></div>
       <div class="gcash-name"><%= gcash.name %></div>
-      <div style="font-size: 12px; margin-top: 12px; opacity: 0.85;">
-        Send payment + message for your code
+      <div class="gcash-note">
+        Mag-GCash ng bayad at i-message ang ref number para sa inyong code.<br>
+        <small>Send payment via GCash + message your ref # for your code.</small>
       </div>
     </div>
   </div>
 
+  <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
 </body>
 </html>
