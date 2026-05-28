@@ -210,15 +210,15 @@ function generateCode() {
   return code;
 }
 
-function generateVouchers(planId, count, batchId, useWifiPassword = false) {
-  const planInfo = PLANS.find(p => p.id === planId);
-  if (!planInfo) throw new Error('Invalid plan: ' + planId);
+function generateVouchers(plan, count, batchId, useWifiPassword = false) {
+  const planInfo = PLANS.find(p => p.id === plan);
+  if (!planInfo) throw new Error('Invalid plan: ' + plan);
 
   const wifiPassword = useWifiPassword ? generateWifiPassword() : null;
 
   if (useWifiPassword) {
     db.run(`INSERT OR REPLACE INTO wifi_batches (batch_id, wifi_password, plan, created_at, active) VALUES (?, ?, ?, ?, 1)`,
-      [batchId, wifiPassword, planId, Date.now()]);
+      [batchId, wifiPassword, plan, Date.now()]);
   }
 
   const generated = [];
@@ -228,7 +228,7 @@ function generateVouchers(planId, count, batchId, useWifiPassword = false) {
     const code = generateCode();
     if (!queryOne(`SELECT id FROM vouchers WHERE code = ?`, [code])) {
       run(`INSERT INTO vouchers (code, plan, price, duration_ms, batch_id, wifi_password, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [code, planId, planInfo.price, planInfo.duration_ms, batchId, wifiPassword, Date.now()]);
+        [code, plan, planInfo.price, planInfo.duration_ms, batchId, wifiPassword, Date.now()]);
       generated.push(code);
     }
   }
