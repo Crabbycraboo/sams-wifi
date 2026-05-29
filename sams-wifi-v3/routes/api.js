@@ -164,13 +164,6 @@ router.get('/session-status', (req, res) => {
     
     const v = req.session.voucher;
     const now = Date.now();
-    const currentDevice = buildDeviceId(req);
-    
-    if (currentDevice !== v.device_id) {
-      req.session.destroy();
-      return res.json({ status: 'device_mismatch' });
-    }
-    
     const dbVoucher = queryOne('SELECT status, expires_at FROM vouchers WHERE code = ?', [v.code]);
     if (!dbVoucher || dbVoucher.status === 'expired') {
       req.session.destroy();
