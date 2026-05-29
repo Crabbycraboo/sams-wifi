@@ -121,13 +121,6 @@ router.get('/portal', (req, res) => {
     if (!req.session.voucher) return res.redirect('/');
     
     const v = req.session.voucher;
-    const deviceId = buildDeviceId(req);
-    
-    // Verify device matches
-    if (deviceId !== v.device_id && !v.mac) {
-      req.session.destroy();
-      return res.redirect('/');
-    }
 
     // Check if expired
     const now = Date.now();
