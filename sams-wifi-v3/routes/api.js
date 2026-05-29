@@ -8,7 +8,115 @@ const {
   createBackup, getBackups
 } = require('../db/database');
 // Add these routes to routes/api.js
+// Add this to routes/api.js
 
+// ─── GATEWAY CHECK (Router calls this to verify device) ──────────────────────
+router.get('/gateway/check', (req, res) => {
+  try {
+    const mac = req.query.mac?.toUpperCase();
+    if (!mac || !mac.match(/^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/)) {
+      return res.send('block');
+    }
+
+    const { queryOne, trackConnection, query } = require('../db/database');
+
+    // 1. Check if manually blocked by admin
+    const blocked = queryOne(`SELECT blocked FROM connections WHERE mac=?`, [mac]);
+    if (blocked && blocked.blocked === 1) {
+      console.log(`[Gateway] ${mac} - MANUALLY BLOCKED`);
+      return res.send('block');
+    }
+
+    // 2. Check if has valid, active voucher
+    const validVoucher = query(`
+      SELECT v.* FROM vouchers v
+      WHERE v.status='active'
+      AND v.expires_at > ?
+      AND v.device_id LIKE ?
+      LIMIT 1
+    `, [Date.now(), '%' + mac.substring(mac.length - 8) + '%']);
+
+    if (validVoucher && validVoucher.length > 0) {
+      const v = validVoucher[0];
+      console.log(`[Gateway] ${mac} - PAID USER (${v.code})`);
+      // Mark as having voucher
+      const { run } = require('../db/database');
+      run(`UPDATE connections SET has_voucher=1 WHERE mac=?`, [mac]);
+      return res.send('allow');
+    }
+
+    // 3. Check free trial time
+    const conn = queryOne(`SELECT connected_at FROM connections WHERE mac=?`, [mac]);
+    
+    if (!conn) {
+      // New device - track connection
+      trackConnection(mac);
+      console.log(`[Gateway] ${mac} - NEW DEVICE (free trial started)`);
+      return res.send('allow');  // Allow free trial for new devices
+    }
+
+    // Calculate how long they've been connected
+    const minutesConnected = Math.floor((Date.now() - conn.connected_at) / 60000);
+    
+    if (minutesConnected < 5) {
+      console.log(`[Gateway] ${mac} - FREE TRIAL (${minutesConnected}m / 5m)`);
+      return res.send('allow');  // Still in free trial
+    }
+
+    // Free trial expired and no voucher = BLOCK
+    console.log(`[Gateway] ${mac} - TRIAL EXPIRED (${minutesConnected}m used)`);
+    return res.send('block');
+
+  } catch(e) {
+    console.error('[Gateway Check Error]', e);
+    res.send('block');
+  }
+});
+
+// ─── GATEWAY: Get Trial Time Remaining ────────────────────────────────────────
+router.get('/gateway/trial-time', (req, res) => {
+  try {
+    const mac = req.query.mac?.toUpperCase();
+    if (!mac) return res.send('0');
+
+    const { queryOne } = require('../db/database');
+    const conn = queryOne(`SELECT connected_at FROM connections WHERE mac=?`, [mac]);
+    
+    if (!conn) return res.send('5');  // New device gets 5 min free trial
+    
+    const minutesUsed = Math.floor((Date.now() - conn.connected_at) / 60000);
+    const minutesRemaining = Math.max(0, 5 - minutesUsed);
+    
+    res.send(String(minutesRemaining));
+  } catch(e) {
+    console.error('[Trial Time Error]', e);
+    res.send('0');
+  }
+});
+
+// ─── GATEWAY: Mark Device as Paid ─────────────────────────────────────────────
+router.get('/gateway/mark-paid', (req, res) => {
+  try {
+    const mac = req.query.mac?.toUpperCase();
+    if (!mac) return res.json({ error: 'No MAC' });
+
+    const { run, queryOne } = require('../db/database');
+    
+    // Create connection record if doesn't exist
+    const exists = queryOne(`SELECT id FROM connections WHERE mac=?`, [mac]);
+    if (!exists) {
+      run(`INSERT INTO connections (mac, connected_at, has_voucher) VALUES (?, ?, 1)`, [mac, Date.now()]);
+    } else {
+      run(`UPDATE connections SET has_voucher=1 WHERE mac=?`, [mac]);
+    }
+    
+    console.log(`[Gateway] ${mac} - MARKED AS PAID`);
+    res.json({ success: true, message: 'Device marked as paid' });
+  } catch(e) {
+    console.error('[Mark Paid Error]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 // ─── BLOCK/UNBLOCK DEVICE (Admin Only) ──────────────────────────────────────
 
 router.post('/admin/block-device', (req, res) => {
