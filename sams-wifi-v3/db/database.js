@@ -480,10 +480,25 @@ function scheduleAutoCleanup() {
   setTimeout(() => { cleanupExpiredVouchers(); setInterval(cleanupExpiredVouchers, 24 * 60 * 60 * 1000); }, target - now);
   console.log(`[CLEANUP] Scheduled daily cleanup`);
 }
-
+function getRepeaterDevices() {
+  try {
+    // Find MACs that connected 3+ times in the last hour
+    return query(`
+      SELECT mac, COUNT(*) as connection_count, MAX(connected_at) as last_connected
+      FROM connections
+      WHERE connected_at > ?
+      GROUP BY mac
+      HAVING COUNT(*) >= 3
+      ORDER BY connection_count DESC
+      LIMIT 50
+    `, [Date.now() - 60 * 60 * 1000]);  // Last hour
+  } catch(e) {
+    return [];
+  }
+}
 module.exports = {
   initDb, PLANS,
-  generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
+    getRepeaterDevices,generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
   getActiveUsers, getSalesStats, getLoadRecommendation,
   getAllVouchers, getAdmin, updateAdminPassword, getVoucherCounts, getUnusedCounts,
   getWifiBatches, checkRateLimit, pruneRateLimits, buildDeviceId,
