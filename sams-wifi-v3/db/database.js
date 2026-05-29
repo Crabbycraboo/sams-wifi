@@ -105,8 +105,9 @@ async function initDb() {
 
   // ─── Migrations (safely add missing columns to existing databases) ──────────
   const migrations = [
-    { sql: `ALTER TABLE connections ADD COLUMN blocked INTEGER DEFAULT 0`,           label: 'blocked column' },
+    { sql: `ALTER TABLE connections ADD COLUMN blocked INTEGER DEFAULT 0`,               label: 'blocked column' },
     { sql: `ALTER TABLE connections ADD COLUMN free_trial_started INTEGER DEFAULT NULL`, label: 'free_trial_started column' },
+    { sql: `ALTER TABLE vouchers ADD COLUMN refunded INTEGER DEFAULT 0`,                 label: 'refunded column' },
   ];
   for (const m of migrations) {
     try {
