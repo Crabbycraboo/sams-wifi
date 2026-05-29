@@ -1,7 +1,11 @@
-// routes/customer.js
+// routes/customer.js - FIXED VERSION
+
 const express = require('express');
 const router = express.Router();
-const { redeemVoucher, PLANS, checkRateLimit, buildDeviceId, getSleepMode, createNotification, trackConnection, markVoucherPaid } = require('../db/database');
+const { 
+  redeemVoucher, PLANS, checkRateLimit, buildDeviceId, getSleepMode, 
+  createNotification, trackConnection, markVoucherPaid, queryOne 
+} = require('../db/database');
 
 const GCASH = {
   number: '09287440932',
@@ -23,95 +27,173 @@ router.get('/', (req, res) => {
 
 // ─── Voucher submission ───────────────────────────────────────────────────────
 router.post('/connect', (req, res) => {
-  const { code } = req.body;
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
-  const deviceId = buildDeviceId(req);
-  const sleepMode = getSleepMode();
+  try {
+    const { code, mac } = req.body;  // ← mac can be passed from router
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+    const deviceId = mac || buildDeviceId(req);  // ← Use MAC if available, else fingerprint
+    const sleepMode = getSleepMode();
 
-  trackConnection(deviceId);
+    // Track free trial connection (by MAC if available)
+    if (mac) {
+      trackConnection(mac);
+    }
 
-  const rateCheck = checkRateLimit(ip, 'code_attempt');
-  if (!rateCheck.allowed) {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: `Too many attempts. Please wait ${rateCheck.retryMins} minute(s).`,
-      code: ''
+    const rateCheck = checkRateLimit(ip, 'code_attempt');
+    if (!rateCheck.allowed) {
+      return res.render('login', {
+        title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+        error: `Too many attempts. Please wait ${rateCheck.retryMins} minute(s).`,
+        code: ''
+      });
+    }
+
+    if (!code || code.trim().length < 4) {
+      return res.render('login', {
+        title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+        error: 'Please enter your voucher code.',
+        code: code || ''
+      });
+    }
+
+    // Redeem the voucher
+    const result = redeemVoucher(code, deviceId);
+
+    if (!result.success) {
+      return res.render('login', {
+        title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+        error: result.message,
+        code: code.toUpperCase()
+      });
+    }
+
+    // Sleep mode: block ₱2 plan
+    if (sleepMode && result.voucher.plan === '5min') {
+      return res.render('login', {
+        title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
+        error: '😴 Si Sam ay natutulog. Minimum: ₱5. Magbayad via GCash: 09287440932 (Sam is sleeping. Min ₱5)',
+        code: ''
+      });
+    }
+
+    // Mark as paid (update connections table if MAC is available)
+    if (mac) {
+      markVoucherPaid(mac);
+    }
+
+    // Create notification
+    createNotification('sale', `✅ Sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
+      code: result.voucher.code,
+      price: result.voucher.price,
+      plan: result.voucher.plan
+    });
+
+    // Store in session
+    req.session.voucher = {
+      code: result.voucher.code,
+      plan: result.voucher.plan,
+      price: result.voucher.price,
+      expires_at: result.voucher.expires_at,
+      started_at: result.voucher.started_at || Date.now(),
+      device_id: deviceId,
+      mac: mac || null,
+      wifi_password: result.voucher.wifi_password || null,
+    };
+
+    // Redirect to portal
+    res.redirect('/portal');
+
+  } catch(e) {
+    console.error('[Connect Error]', e);
+    res.render('login', {
+      title: "Sam's WiFi",
+      plans: PLANS,
+      sleepMode: getSleepMode(),
+      gcash: GCASH,
+      error: 'Server error. Please try again.',
+      code: req.body.code || ''
     });
   }
-
-  if (!code || code.trim().length < 4) {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: 'Please enter your voucher code.',
-      code: code || ''
-    });
-  }
-
-  const result = redeemVoucher(code, deviceId);
-
-  if (!result.success) {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: result.message,
-      code: code.toUpperCase()
-    });
-  }
-
-  // Sleep mode: block cheapest plan
-  if (sleepMode && result.voucher.plan === '5min') {
-    return res.render('login', {
-      title: "Sam's WiFi", plans: PLANS, sleepMode, gcash: GCASH,
-      error: '😴 Si Sam ay natutulog. Pinakamababang plano: ₱5. Mag-GCash at makipag-ugnayan para sa code. (Sam is asleep. Min plan is ₱5 – pay via GCash.)',
-      code: ''
-    });
-  }
-
-  markVoucherPaid(deviceId);
-
-  createNotification('sale', `New sale: ₱${result.voucher.price} (${result.voucher.plan})`, {
-    code: result.voucher.code,
-    price: result.voucher.price,
-    plan: result.voucher.plan
-  });
-
-  req.session.voucher = {
-    code: result.voucher.code,
-    plan: result.voucher.plan,
-    price: result.voucher.price,
-    expires_at: result.voucher.expires_at,
-    started_at: result.voucher.started_at || Date.now(),
-    device_id: deviceId,
-    wifi_password: result.voucher.wifi_password || null,
-  };
-
-  res.redirect('/portal');
 });
 
-// ─── Portal ───────────────────────────────────────────────────────────────────
+// ─── Portal (Countdown Timer) ──────────────────────────────────────────────────
 router.get('/portal', (req, res) => {
-  if (!req.session.voucher) return res.redirect('/');
-  const v = req.session.voucher;
-  if (buildDeviceId(req) !== v.device_id) {
-    req.session.destroy();
-    return res.redirect('/');
+  try {
+    if (!req.session.voucher) return res.redirect('/');
+    
+    const v = req.session.voucher;
+    const deviceId = buildDeviceId(req);
+    
+    // Verify device matches
+    if (deviceId !== v.device_id && !v.mac) {
+      req.session.destroy();
+      return res.redirect('/');
+    }
+
+    // Check if expired
+    const now = Date.now();
+    if (now >= v.expires_at) {
+      req.session.destroy();
+      return res.redirect('/expired');
+    }
+
+    // Calculate time remaining
+    const msRemaining = v.expires_at - now;
+    const minsRemaining = Math.floor(msRemaining / 60000);
+    const secsRemaining = Math.floor((msRemaining % 60000) / 1000);
+
+    res.render('portal', {
+      title: "Sam's WiFi – Connected",
+      voucher: v,
+      plans: PLANS,
+      minsRemaining,
+      secsRemaining,
+      msRemaining
+    });
+  } catch(e) {
+    console.error('[Portal Error]', e);
+    res.redirect('/');
   }
-  if (Date.now() >= v.expires_at) {
-    req.session.destroy();
-    return res.redirect('/expired');
-  }
-  res.render('portal', { title: "Sam's WiFi – Konektado", voucher: v, plans: PLANS });
 });
 
 // ─── Expired ──────────────────────────────────────────────────────────────────
 router.get('/expired', (req, res) => {
-  req.session.destroy(() => {});
-  res.render('expired', { title: "Sam's WiFi – Natapos na", plans: PLANS });
+  try {
+    req.session.destroy(() => {});
+    res.render('expired', {
+      title: "Sam's WiFi – Time's Up",
+      plans: PLANS,
+      gcash: GCASH
+    });
+  } catch(e) {
+    res.render('expired', { title: "Sam's WiFi", plans: PLANS, gcash: GCASH });
+  }
 });
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
-  req.session.destroy();
+  try {
+    req.session.destroy(() => {});
+  } catch(e) {}
   res.redirect('/');
+});
+
+// ─── API: Check Time Remaining ────────────────────────────────────────────────
+router.get('/api/time-remaining', (req, res) => {
+  if (!req.session.voucher) return res.json({ error: 'Not connected' });
+  
+  const v = req.session.voucher;
+  const msRemaining = Math.max(0, v.expires_at - Date.now());
+  const minsRemaining = Math.floor(msRemaining / 60000);
+  const secsRemaining = Math.floor((msRemaining % 60000) / 1000);
+  
+  res.json({
+    minsRemaining,
+    secsRemaining,
+    msRemaining,
+    expired: msRemaining <= 0,
+    code: v.code,
+    plan: v.plan
+  });
 });
 
 module.exports = router;
