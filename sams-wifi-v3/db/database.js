@@ -103,6 +103,20 @@ async function initDb() {
     size INTEGER
   )`);
 
+  // ─── Migrations (safely add missing columns to existing databases) ──────────
+  const migrations = [
+    { sql: `ALTER TABLE connections ADD COLUMN blocked INTEGER DEFAULT 0`,           label: 'blocked column' },
+    { sql: `ALTER TABLE connections ADD COLUMN free_trial_started INTEGER DEFAULT NULL`, label: 'free_trial_started column' },
+  ];
+  for (const m of migrations) {
+    try {
+      db.run(m.sql);
+      console.log(`[DB] Migration applied: ${m.label}`);
+    } catch(e) {
+      // Column already exists — safe to ignore
+    }
+  }
+
   const adminRows = db.exec(`SELECT id FROM admin_users WHERE username = 'admin'`);
   if (!adminRows.length || !adminRows[0].values.length) {
     const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'sams2024', 10);
