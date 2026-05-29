@@ -89,11 +89,12 @@ async function initDb() {
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS connections (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mac TEXT NOT NULL,
-    connected_at INTEGER NOT NULL,
-    has_voucher INTEGER DEFAULT 0
-  )`);
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  mac TEXT NOT NULL,
+  connected_at INTEGER NOT NULL,
+  has_voucher INTEGER DEFAULT 0,
+  blocked INTEGER DEFAULT 0
+)`);
 
   db.run(`CREATE TABLE IF NOT EXISTS backups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
