@@ -3,28 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> – Sam's WiFi</title>
+  <title><%= title %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
   <style>
     @media print {
-      body * { visibility: hidden; }
-      #printSheet, #printSheet * { visibility: visible; }
-      #printSheet { position: fixed; top: 0; left: 0; width: 100%; padding: 10mm; }
-      .print-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; }
-      .pv { border: 1.5px dashed #aaa; border-radius: 6px; padding: 8px; text-align: center; page-break-inside: avoid; }
-      .pv-logo { font-size: 10px; font-weight: bold; color: #1a3a6b; }
-      .pv-code { font-size: 16px; font-weight: 900; font-family: monospace; letter-spacing: 2px; margin: 4px 0; color: #000; }
-      .pv-plan { font-size: 11px; color: #444; }
-      .pv-price { font-size: 22px; font-weight: 900; color: #1a3a6b; }
-      .pv-loc { font-size: 8px; color: #888; margin-top: 3px; }
-      .pv-wifi { font-size: 8px; color: #555; }
+      body * { display: none; }
+      #printSheet { display: block !important; }
+      #printSheet, #printSheet * { 
+        display: block !important;
+        visibility: visible !important; 
+      }
+      #printSheet {
+        position: static !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .print-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 5mm !important;
+        width: 100% !important;
+      }
+      .pv {
+        border: 2px dashed #333 !important;
+        border-radius: 6px !important;
+        padding: 10px !important;
+        text-align: center !important;
+        page-break-inside: avoid !important;
+        background: white !important;
+        color: black !important;
+      }
+      .pv-code {
+        font-size: 18px !important;
+        font-weight: 900 !important;
+        font-family: monospace !important;
+        margin: 5px 0 !important;
+        color: #000 !important;
+      }
+      .pv-price {
+        font-size: 24px !important;
+        font-weight: 900 !important;
+        color: #1a3a6b !important;
+        margin: 3px 0 !important;
+      }
+      .pv-duration {
+        font-size: 12px !important;
+        color: #666 !important;
+      }
     }
   </style>
 </head>
 <body class="admin-body">
 
-<div id="printSheet" style="display:none;">
+<!-- Hidden Print Sheet -->
+<div id="printSheet" style="display:none;padding:10mm;background:white;width:100%;">
   <div class="print-grid" id="printGrid"></div>
 </div>
 
@@ -35,241 +69,178 @@
     <div class="brand-sub">Admin Panel</div>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-section-label">Main</div>
     <a href="/admin" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
     <a href="/admin/vouchers" class="nav-link active"><span class="nav-icon">🎫</span> Vouchers</a>
-    <div class="nav-section-label" style="margin-top:12px;">Other</div>
-    <a href="/" class="nav-link" target="_blank"><span class="nav-icon">🌐</span> Customer Portal</a>
   </nav>
-  <div class="sidebar-footer">
-    <form action="/admin/logout" method="POST">
-      <button type="submit" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:0;font-family:var(--font);">⏏ Logout</button>
-    </form>
-  </div>
 </aside>
 
+<!-- Main -->
 <main class="admin-main">
   <div class="admin-topbar">
-    <h1>🎫 Voucher Manager</h1>
-    <button class="btn btn-outline btn-sm no-print" onclick="window.print()">🖨️ Print Sheet</button>
+    <h1>🎫 Generate Vouchers</h1>
+    <a href="/admin" class="btn btn-outline btn-sm">← Back</a>
   </div>
 
   <div class="admin-content">
 
-    <!-- Generator -->
-    <div class="gen-card no-print" style="margin-bottom:24px;">
-      <h3 style="margin-bottom:4px;">⚡ Generate Vouchers</h3>
-      <p style="font-size:0.8rem;color:var(--gray-400);margin-bottom:16px;">Generates SAM-XXXX codes ready to print on 20-per-sheet slips.</p>
-
-      <div class="plan-selector" style="margin-bottom:14px;">
-        <div class="plan-option">
-          <input type="radio" name="genPlan" id="gp5m" value="5min">
-          <label for="gp5m"><span class="plan-price">₱2</span><span class="plan-dur">5 Minutes</span></label>
-        </div>
-        <div class="plan-option">
-          <input type="radio" name="genPlan" id="gp15m" value="15min" checked>
-          <label for="gp15m"><span class="plan-price">₱5</span><span class="plan-dur">15 Minutes</span></label>
-        </div>
-        <div class="plan-option">
-          <input type="radio" name="genPlan" id="gp30m" value="30min">
-          <label for="gp30m"><span class="plan-price">₱10</span><span class="plan-dur">30 Minutes</span></label>
-        </div>
-        <div class="plan-option">
-          <input type="radio" name="genPlan" id="gp1h" value="1hr">
-          <label for="gp1h"><span class="plan-price">₱20</span><span class="plan-dur">1 Hour</span></label>
-        </div>
-        <div class="plan-option">
-          <input type="radio" name="genPlan" id="gp3h" value="3hr">
-          <label for="gp3h" style="border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06);">
-            <span class="plan-price" style="color:#fcd34d;">₱60</span><span class="plan-dur">3 Hours</span>
+    <!-- Generate Section -->
+    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
+      <h3 style="margin-bottom:16px;">⚡ Generate Vouchers</h3>
+      
+      <div style="margin-bottom:20px;">
+        <p style="font-size:0.85rem;color:var(--gray-400);margin-bottom:16px;">Select plan and quantity:</p>
+        
+        <!-- Plan Selection -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
+          <label style="padding:12px;border:2px solid rgba(102,126,234,0.5);border-radius:8px;background:rgba(102,126,234,0.1);cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="5min" checked style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱2</div>
+            <div style="font-size:11px;color:var(--gray-400);">5 Minutes</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="15min" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱5</div>
+            <div style="font-size:11px;color:var(--gray-400);">15 Minutes</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="30min" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱10</div>
+            <div style="font-size:11px;color:var(--gray-400);">30 Minutes</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="1hr" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱20</div>
+            <div style="font-size:11px;color:var(--gray-400);">1 Hour</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(251,191,36,0.3);border-radius:8px;background:rgba(251,191,36,0.06);cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="3hr" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#fcd34d;">₱60</div>
+            <div style="font-size:11px;color:var(--gray-400);">3 Hours</div>
           </label>
         </div>
-      </div>
 
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <label style="font-size:0.85rem;color:var(--gray-400);">Quantity:</label>
-          <select id="genCount" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--white);border-radius:var(--radius-sm);padding:8px 12px;font-family:var(--font);font-size:0.9rem;">
+        <!-- Quantity -->
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+          <label style="color:var(--gray-400);font-size:0.9rem;">Quantity:</label>
+          <select id="count" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--white);border-radius:6px;padding:8px 12px;font-family:var(--font);">
             <option value="10">10</option>
             <option value="20" selected>20 (1 sheet)</option>
             <option value="40">40 (2 sheets)</option>
             <option value="60">60 (3 sheets)</option>
-            <option value="80">80 (4 sheets)</option>
             <option value="100">100 (5 sheets)</option>
           </select>
+          <button class="btn btn-success" onclick="generate()">⚡ Generate & Print</button>
         </div>
-        <button class="btn btn-success" onclick="generateVouchers()">⚡ Generate & Preview</button>
-      </div>
 
-      <div style="margin-bottom:16px;padding:12px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);display:flex;align-items:flex-start;gap:10px;">
-        <input type="checkbox" id="useWifiPw" style="margin-top:3px;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;">
-        <label for="useWifiPw" style="font-size:0.85rem;color:var(--gray-300);cursor:pointer;line-height:1.5;">
-          <strong style="color:var(--warning);">🔒 Attach WiFi Password to Batch</strong><br>
-          <span style="color:var(--gray-400);">Generates one unique hotspot password for this batch. Print it on each slip. Change your Oppo hotspot password to match before distributing.</span>
-        </label>
-      </div>
-
-      <div class="codes-output" id="codesOutput" style="display:none;">
-        <div class="codes-grid" id="codesGrid"></div>
-      </div>
-      <div id="genMsg" style="font-size:0.85rem;margin-top:8px;"></div>
-
-      <div id="printActions" style="display:none;margin-top:12px;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="printVouchers()">🖨️ Print Voucher Sheet</button>
-        <button class="btn btn-outline btn-sm" onclick="copyAll()">📋 Copy All Codes</button>
-        <span style="font-size:0.8rem;color:var(--gray-400);align-self:center;">💡 20 per sheet – i-gupit at ibigay sa customers.</span>
+        <div id="genMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
       </div>
     </div>
 
     <!-- Voucher List -->
     <div class="card" style="background:rgba(255,255,255,0.03);">
-      <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h3>📋 Voucher List</h3>
-        <div style="font-size:0.8rem;color:var(--gray-400);">
-          Unused: <strong style="color:var(--blue-200);"><%= counts.unused %></strong> &nbsp;|&nbsp;
-          Active: <strong style="color:var(--success);"><%= counts.active %></strong> &nbsp;|&nbsp;
-          Expired: <strong style="color:var(--gray-400);"><%= counts.expired %></strong>
+        <div style="font-size:0.85rem;color:var(--gray-400);">
+          Unused: <strong><%= counts.unused %></strong> | Active: <strong><%= counts.active %></strong>
         </div>
       </div>
 
-      <div class="voucher-filters no-print">
-        <a href="/admin/vouchers" class="filter-btn <%= currentStatus==='all'?'active':'' %>">All (<%= counts.all %>)</a>
-        <a href="/admin/vouchers?status=unused" class="filter-btn <%= currentStatus==='unused'?'active':'' %>">Unused (<%= counts.unused %>)</a>
-        <a href="/admin/vouchers?status=active" class="filter-btn <%= currentStatus==='active'?'active':'' %>">Active (<%= counts.active %>)</a>
-        <a href="/admin/vouchers?status=expired" class="filter-btn <%= currentStatus==='expired'?'active':'' %>">Expired (<%= counts.expired %>)</a>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <a href="/admin/vouchers?status=all" class="btn <%= currentStatus === 'all' ? 'btn-primary' : 'btn-outline' %> btn-sm">All (<%= counts.all %>)</a>
+        <a href="/admin/vouchers?status=unused" class="btn <%= currentStatus === 'unused' ? 'btn-primary' : 'btn-outline' %> btn-sm">Unused (<%= counts.unused %>)</a>
+        <a href="/admin/vouchers?status=active" class="btn <%= currentStatus === 'active' ? 'btn-primary' : 'btn-outline' %> btn-sm">Active (<%= counts.active %>)</a>
+        <a href="/admin/vouchers?status=expired" class="btn <%= currentStatus === 'expired' ? 'btn-primary' : 'btn-outline' %> btn-sm">Expired (<%= counts.expired %>)</a>
       </div>
 
-      <% if (vouchers.length === 0) { %>
-        <p style="color:var(--gray-400);text-align:center;padding:32px 0;font-size:0.9rem;">
-          Walang vouchers na nahanap. / No vouchers found.
-          <br><a href="#" onclick="window.scrollTo(0,0)" style="color:var(--blue-300);">Generate some above ↑</a>
-        </p>
-      <% } else { %>
-        <% const PLAN_LABELS = { '5min':'5 min','15min':'15 min','30min':'30 min','1hr':'1 hr','3hr':'3 hrs' }; %>
-        <div style="overflow-x:auto;margin-top:12px;">
-          <table class="users-table">
-            <thead>
-              <tr>
-                <th>Code</th><th>Plan</th><th>Price</th><th>Status</th><th>Created</th><th>Expires</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% vouchers.forEach(v => {
-                const created = new Date(v.created_at).toLocaleDateString('en-PH',{month:'short',day:'numeric'});
-                const expires = v.expires_at ? new Date(v.expires_at).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-              %>
-              <tr>
-                <td class="code-cell"><%= v.code %></td>
-                <td style="color:var(--white)"><%= PLAN_LABELS[v.plan] || v.plan %></td>
-                <td style="color:var(--accent);font-family:var(--mono);">₱<%= v.price %></td>
-                <td><span class="badge badge-<%= v.status %>"><%= v.status %></span></td>
-                <td><%= created %></td>
-                <td style="font-size:0.8rem;"><%= expires %></td>
-              </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-        <% if (vouchers.length === 50) { %>
-          <div style="text-align:center;margin-top:16px;">
-            <a href="/admin/vouchers?status=<%= currentStatus %>&page=<%= currentPage+1 %>" class="btn btn-outline btn-sm">Next Page →</a>
-          </div>
-        <% } %>
-      <% } %>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;font-size:0.85rem;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Code</th>
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Plan</th>
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Status</th>
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% vouchers.forEach(v => { %>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+              <td style="padding:8px 0;font-family:var(--mono);font-weight:600;color:#667eea;"><%= v.code %></td>
+              <td style="padding:8px 0;"><%= v.plan %></td>
+              <td style="padding:8px 0;">
+                <span style="padding:4px 8px;border-radius:4px;<%= v.status === 'unused' ? 'background:#4ade80;color:#000;' : v.status === 'active' ? 'background:#667eea;color:#fff;' : 'background:#666;color:#fff;' %>">
+                  <%= v.status.toUpperCase() %>
+                </span>
+              </td>
+              <td style="padding:8px 0;color:var(--gray-400);font-size:0.8rem;"><%= new Date(v.created_at).toLocaleDateString('en-PH') %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
     </div>
 
   </div>
 </main>
 
 <script>
-// Plan metadata matching database.js PLANS
-const PLAN_META = {
-  '5min':  { price: 2,  dur: '5 Min',   label: '₱2 – 5 Min'  },
-  '15min': { price: 5,  dur: '15 Min',  label: '₱5 – 15 Min' },
-  '30min': { price: 10, dur: '30 Min',  label: '₱10 – 30 Min'},
-  '1hr':   { price: 20, dur: '1 Hour',  label: '₱20 – 1 Hr'  },
-  '3hr':   { price: 60, dur: '3 Hours', label: '₱60 – 3 Hrs' },
-};
+  async function generate() {
+    const plan = document.querySelector('input[name="plan"]:checked').value;
+    const count = document.getElementById('count').value;
+    const msg = document.getElementById('genMsg');
 
-let generatedCodes = [];
+    msg.innerHTML = '⏳ Generating...';
+    msg.style.color = 'var(--gray-400)';
 
-async function generateVouchers() {
-  const plan  = document.querySelector('input[name="genPlan"]:checked').value;
-  const count = document.getElementById('genCount').value;
-  const meta  = PLAN_META[plan];
-  const genMsg = document.getElementById('genMsg');
+    try {
+      const res = await fetch('/admin/vouchers/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `plan=${plan}&count=${count}`
+      });
+      const data = await res.json();
 
-  genMsg.textContent = '⏳ Generating...';
-  genMsg.style.color = 'var(--gray-400)';
-
-  const useWifi = document.getElementById('useWifiPw').checked;
-
-  try {
-    const res  = await fetch('/admin/vouchers/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `plan=${plan}&count=${count}&use_wifi_password=${useWifi}`
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-
-    generatedCodes = data.codes;
-
-    if (data.wifiPassword) {
-      const el = document.createElement('div');
-      el.style.cssText = 'margin-bottom:12px;padding:14px 16px;background:rgba(251,191,36,0.12);border:2px solid rgba(251,191,36,0.4);border-radius:var(--radius-sm);';
-      el.innerHTML = `<div style="font-size:0.8rem;color:var(--warning);font-weight:700;margin-bottom:4px;">🔒 WIFI PASSWORD FOR THIS BATCH</div>
-        <div style="font-family:var(--mono);font-size:1.4rem;color:var(--white);letter-spacing:0.1em;">${data.wifiPassword}</div>
-        <div style="font-size:0.78rem;color:var(--gray-400);margin-top:6px;">⚠️ Set this as your Oppo hotspot password NOW before printing slips.</div>`;
-      document.getElementById('codesOutput').before(el);
+      if (data.success) {
+        msg.innerHTML = `✅ Generated ${data.count} vouchers!`;
+        msg.style.color = '#4ade80';
+        
+        // Generate print vouchers
+        const grid = document.getElementById('printGrid');
+        grid.innerHTML = '';
+        
+        const planInfo = {
+          '5min': { price: '₱2', duration: '5 Min' },
+          '15min': { price: '₱5', duration: '15 Min' },
+          '30min': { price: '₱10', duration: '30 Min' },
+          '1hr': { price: '₱20', duration: '1 Hour' },
+          '3hr': { price: '₱60', duration: '3 Hours' }
+        };
+        
+        const info = planInfo[plan];
+        data.codes.forEach(code => {
+          const div = document.createElement('div');
+          div.className = 'pv';
+          div.innerHTML = `
+            <div class="pv-price">${info.price}</div>
+            <div class="pv-duration">${info.duration}</div>
+            <div class="pv-code">${code}</div>
+          `;
+          grid.appendChild(div);
+        });
+        
+        // Open print
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      } else {
+        msg.innerHTML = `❌ Error: ${data.error}`;
+        msg.style.color = '#ff6b6b';
+      }
+    } catch(e) {
+      msg.innerHTML = `❌ Error: ${e.message}`;
+      msg.style.color = '#ff6b6b';
     }
-
-    const grid = document.getElementById('codesGrid');
-    grid.innerHTML = data.codes.map(c => `<div class="code-chip">${c}</div>`).join('');
-    document.getElementById('codesOutput').style.display = 'block';
-
-    const pa = document.getElementById('printActions');
-    pa.style.display = 'flex';
-
-    buildPrintGrid(data.codes, meta.price, meta.dur, data.wifiPassword);
-
-    genMsg.textContent = `✅ ${data.count} vouchers generated — ready to print!`;
-    genMsg.style.color = 'var(--success)';
-
-    setTimeout(() => window.location.reload(), 3000);
-  } catch(e) {
-    genMsg.textContent = '❌ ' + e.message;
-    genMsg.style.color = 'var(--danger)';
   }
-}
-
-function buildPrintGrid(codes, price, dur, wifiPassword) {
-  const grid = document.getElementById('printGrid');
-  const wifiLine = wifiPassword
-    ? `<div class="pv-wifi" style="color:#f59e0b;font-weight:700;">WiFi PW: ${wifiPassword}</div>`
-    : `<div class="pv-wifi">i-type ang code sa portal</div>`;
-  grid.innerHTML = codes.map(code => `
-    <div class="pv">
-      <div class="pv-logo">📶 Sam's WiFi</div>
-      <div class="pv-price">₱${price}</div>
-      <div class="pv-plan">${dur}</div>
-      <div class="pv-code">${code}</div>
-      ${wifiLine}
-      <div class="pv-loc">Taytay, Rizal</div>
-    </div>
-  `).join('');
-  document.getElementById('printSheet').style.display = 'block';
-}
-
-function printVouchers() {
-  if (!generatedCodes.length) { alert('Generate vouchers first!'); return; }
-  window.print();
-}
-
-function copyAll() {
-  navigator.clipboard.writeText(generatedCodes.join('\n'));
-  alert(`Copied ${generatedCodes.length} codes to clipboard!`);
-}
 </script>
 </body>
 </html>
