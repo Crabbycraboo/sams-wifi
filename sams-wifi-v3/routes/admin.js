@@ -82,10 +82,11 @@ router.get('/', (req, res) => {
     try { sleepMode = getSleepMode() || false; } catch(e) { console.warn('[Dashboard] sleepMode:', e.message); }
 
     // Fetch non-payers (free trial users without vouchers)
-    try {
-      const now = Date.now();
-      const oneHourAgo = now - 3600000;
-      const allConnections = query(`
+  try {
+const now = Date.now();
+const oneHourAgo = now - 3600000;
+const { query } = getDb();  
+const allConnections = query(`
         SELECT mac, connected_at, has_voucher
         FROM connections
         WHERE has_voucher = 0
