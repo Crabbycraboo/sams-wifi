@@ -7,7 +7,99 @@ const {
   queryOne, getActiveUsers, refundVoucher, getRefundHistory,
   createBackup, getBackups
 } = require('../db/database');
+// Add these routes to routes/api.js
 
+// ─── BLOCK/UNBLOCK DEVICE (Admin Only) ──────────────────────────────────────
+
+router.post('/admin/block-device', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const { mac } = req.body;
+    if (!mac || !mac.match(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/)) {
+      return res.status(400).json({ error: 'Invalid MAC address' });
+    }
+    
+    // Add to blocked list (create table if needed)
+    const { run, queryOne } = require('../db/database');
+    
+    const exists = queryOne(`SELECT id FROM connections WHERE mac=? AND blocked=1`, [mac]);
+    if (exists) {
+      return res.json({ success: true, message: 'Already blocked' });
+    }
+    
+    run(`UPDATE connections SET blocked=1 WHERE mac=?`, [mac]);
+    res.json({ success: true, message: `Blocked: ${mac}` });
+  } catch(e) {
+    console.error('[Block Device]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/admin/unblock-device', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const { mac } = req.body;
+    if (!mac) return res.status(400).json({ error: 'Invalid MAC' });
+    
+    const { run } = require('../db/database');
+    run(`UPDATE connections SET blocked=0 WHERE mac=?`, [mac]);
+    res.json({ success: true, message: `Unblocked: ${mac}` });
+  } catch(e) {
+    console.error('[Unblock Device]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── GATEWAY CHECK (Modified to check blocked status) ──────────────────────
+
+router.get('/gateway/check', (req, res) => {
+  try {
+    const mac = req.query.mac?.toUpperCase();
+    if (!mac) return res.send('block');
+
+    const { queryOne } = require('../db/database');
+
+    // Check if manually blocked
+    const blocked = queryOne(`SELECT blocked FROM connections WHERE mac=?`, [mac]);
+    if (blocked && blocked.blocked === 1) {
+      return res.send('block');
+    }
+
+    // Check if has valid voucher
+    const voucher = queryOne(`
+      SELECT * FROM vouchers 
+      WHERE status='active' 
+      AND expires_at > ? 
+      AND device_id LIKE ?
+    `, [Date.now(), '%' + mac.substring(mac.length - 8) + '%']);
+
+    if (voucher && voucher.expires_at > Date.now()) {
+      return res.send('allow');
+    }
+
+    res.send('block');
+  } catch(e) {
+    console.error('[Gateway Check]', e);
+    res.send('block');
+  }
+});
+
+// ─── GET BLOCKED DEVICES (for dashboard) ────────────────────────────────────
+
+router.get('/admin/blocked-devices', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const { query } = require('../db/database');
+    const blocked = query(`SELECT mac, connected_at, blocked FROM connections WHERE blocked=1 ORDER BY connected_at DESC LIMIT 50`);
+    res.json({ success: true, blocked });
+  } catch(e) {
+    console.error('[Blocked Devices]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 // ─── Session status (polled every 15s by portal) ──────────────────────────────
 router.get('/session-status', (req, res) => {
   if (!req.session.voucher) return res.json({ status: 'no_session' });
