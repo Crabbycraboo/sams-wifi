@@ -79,4 +79,107 @@ router.post('/gateway/mark-paid', (req, res) => {
     const mac = req.query.mac?.toLowerCase();
     if (!mac) return res.json({ error: 'no mac' });
     markVoucherPaid(mac);
-    res.json({ success: true })
+    res.json({ success: true });
+  } catch(e) { res.json({ error: e.message }); }
+});
+
+// ─── GATEWAY: Block/unblock device (admin action) ─────────────────────────────
+router.post('/admin/block-device', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const mac = req.body.mac?.toLowerCase();
+    if (!mac) return res.json({ error: 'no mac' });
+    trackConnection(mac);
+    run(`UPDATE connections SET blocked=1 WHERE mac=?`, [mac]);
+    console.log(`[Admin] Blocked device: ${mac}`);
+    res.json({ success: true });
+  } catch(e) { res.json({ error: e.message }); }
+});
+
+router.post('/admin/unblock-device', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const mac = req.body.mac?.toLowerCase();
+    if (!mac) return res.json({ error: 'no mac' });
+    run(`UPDATE connections SET blocked=0 WHERE mac=?`, [mac]);
+    console.log(`[Admin] Unblocked device: ${mac}`);
+    res.json({ success: true });
+  } catch(e) { res.json({ error: e.message }); }
+});
+
+router.get('/admin/blocked-devices', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const devices = query(`SELECT mac, connected_at FROM connections WHERE blocked=1 ORDER BY connected_at DESC`);
+    res.json(devices);
+  } catch(e) { res.json([]); }
+});
+
+// ─── Session status (polled every 15s by portal) ──────────────────────────────
+router.get('/session-status', (req, res) => {
+  if (!req.session.voucher) return res.json({ status: 'no_session' });
+  const v = req.session.voucher;
+  const now = Date.now();
+
+  const currentDevice = buildDeviceId(req);
+  if (currentDevice !== v.device_id) {
+    req.session.destroy();
+    return res.json({ status: 'device_mismatch' });
+  }
+
+  const dbVoucher = queryOne('SELECT status, expires_at FROM vouchers WHERE code = ?', [v.code]);
+  if (!dbVoucher || dbVoucher.status === 'expired') {
+    req.session.destroy();
+    return res.json({ status: 'expired' });
+  }
+
+  const msRemaining = dbVoucher.expires_at - now;
+  if (msRemaining <= 0) {
+    req.session.destroy();
+    return res.json({ status: 'expired' });
+  }
+
+  res.json({ status: 'active', msRemaining, code: v.code, plan: v.plan, expires_at: dbVoucher.expires_at });
+});
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+router.get('/notifications', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try { res.json(getUnreadNotifications()); } catch(e) { res.json([]); }
+});
+
+router.post('/notifications/:id/read', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try { markNotificationRead(req.params.id); res.json({ success: true }); } catch(e) { res.json({ success: false }); }
+});
+
+// ─── Admin data endpoints ─────────────────────────────────────────────────────
+router.get('/admin/active-users', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try { res.json(getActiveUsers()); } catch(e) { res.json([]); }
+});
+
+router.post('/admin/refund', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const result = refundVoucher(req.body.code);
+    res.json(result.success ? { success: true, refunded_amount: result.refunded_amount } : { success: false, error: result.error });
+  } catch(e) { res.json({ success: false, error: e.message }); }
+});
+
+router.get('/admin/refunds', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try { res.json(getRefundHistory()); } catch(e) { res.json([]); }
+});
+
+router.get('/admin/backups', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try { res.json(getBackups()); } catch(e) { res.json([]); }
+});
+
+router.post('/admin/backup', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try { res.json(createBackup()); } catch(e) { res.json({ success: false, error: e.message }); }
+});
+
+module.exports = router;
