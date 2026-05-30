@@ -109,6 +109,63 @@
       </div>
     </div>
 
+    <!-- ⚠️ SUSPICIOUS REPEATERS - Free Trial Abusers -->
+    <% if (suspiciousDevices && suspiciousDevices.length > 0) { %>
+    <div class="card" style="background:rgba(255,107,107,0.1);border:2px solid rgba(255,107,107,0.4);margin-bottom:24px;padding:20px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="font-size:32px;">⚠️</div>
+        <div>
+          <h3 style="margin:0;color:#ff6b6b;">Suspicious Activity Detected!</h3>
+          <p style="margin:4px 0 0 0;font-size:0.85rem;color:var(--gray-400);">Free trial repeaters trying to abuse the system</p>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table style="width:100%;font-size:0.85rem;">
+          <thead>
+            <tr style="border-bottom:2px solid rgba(255,107,107,0.3);">
+              <th style="text-align:left;padding:10px 0;color:#ff6b6b;font-weight:700;">Device MAC</th>
+              <th style="text-align:center;padding:10px 0;color:#ff6b6b;font-weight:700;">Reconnections</th>
+              <th style="text-align:center;padding:10px 0;color:#ff6b6b;font-weight:700;">Last Seen</th>
+              <th style="text-align:center;padding:10px 0;color:#ff6b6b;font-weight:700;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% suspiciousDevices.forEach(dev => {
+              const lastSeen = new Date(dev.last_connected).toLocaleTimeString('en-PH');
+              const macShort = dev.mac.substring(0, 12);
+            %>
+            <tr style="border-bottom:1px solid rgba(255,107,107,0.2);background:rgba(255,107,107,0.05);">
+              <td style="padding:12px 0;font-family:var(--mono);font-size:0.75rem;color:#ff6b6b;font-weight:700;">
+                <span title="<%= dev.mac %>"><%= macShort %>...</span>
+              </td>
+              <td style="padding:12px 0;text-align:center;color:#ff6b6b;font-weight:700;font-size:18px;">
+                <%= dev.connection_count %>x
+              </td>
+              <td style="padding:12px 0;text-align:center;color:var(--gray-400);font-size:0.8rem;">
+                <%= lastSeen %>
+              </td>
+              <td style="padding:12px 0;text-align:center;">
+                <button 
+                  class="btn btn-danger" 
+                  style="padding:6px 12px;font-size:0.8rem;font-weight:700;"
+                  onclick="blockRepeater('<%= dev.mac %>', '<%= macShort %>', this)"
+                >
+                  🚫 BLOCK NOW
+                </button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:16px;padding:12px;background:rgba(255,107,107,0.1);border-radius:6px;font-size:0.8rem;color:var(--gray-400);">
+        <strong>ℹ️ Info:</strong> These devices reconnected 3+ times in the last hour. They're likely abusing the free trial. Click "BLOCK NOW" to prevent them from using your WiFi.
+      </div>
+    </div>
+    <% } %>
+
     <!-- Active Users & Non-Payers -->
     <div class="grid-2" style="margin-bottom:24px;">
 
@@ -148,170 +205,70 @@
         <% } %>
       </div>
 
-     <!-- Replace the "Free Trial (Non-Payers)" section in dashboard.ejs with this: -->
-
-<!-- Free Trial (Non-Payers) with Block Button -->
-<div class="card" style="background:rgba(255,255,255,0.03);">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <h3>⏳ Free Trial (Unpaid)</h3>
-    <span class="badge" style="background:#fcd34d;color:#000;"><%= nonPayers.length %> users</span>
-  </div>
-  <% if (nonPayers.length === 0) { %>
-    <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">Everyone paid! 🎉</p>
-  <% } else { %>
-    <div style="overflow-x:auto;">
-      <table style="width:100%;font-size:0.85rem;">
-        <thead>
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-            <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Device MAC</th>
-            <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Time Used</th>
-            <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Status</th>
-            <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% nonPayers.forEach(np => {
-            const timeLeft = 5 - np.minutes_connected;
-            const isExpired = timeLeft <= 0;
-            const macShort = np.mac.substring(0, 12);
-          %>
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-            <td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:var(--gray-400);">
-              <span title="<%= np.mac %>"><%= macShort %>...</span>
-            </td>
-            <td style="padding:8px 0;text-align:center;color:var(--gray-400);">
-              <%= np.minutes_connected %>m / 5m
-            </td>
-            <td style="padding:8px 0;text-align:center;">
-              <% if (isExpired) { %>
-                <span style="color:#ff6b6b;font-weight:600;background:rgba(255,107,107,0.1);padding:4px 8px;border-radius:4px;">❌ EXPIRED</span>
-              <% } else { %>
-                <span style="color:#fcd34d;font-weight:600;background:rgba(252,211,52,0.1);padding:4px 8px;border-radius:4px;">⏳ <%= timeLeft %>m</span>
-              <% } %>
-            </td>
-            <td style="padding:8px 0;text-align:center;">
-              <% if (isExpired) { %>
-                <button 
-                  class="btn btn-danger" 
-                  style="padding:4px 8px;font-size:0.75rem;"
-                  onclick="blockDevice('<%= np.mac %>', this)"
-                >
-                  🚫 Block
-                </button>
-              <% } %>
-            </td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
+      <!-- Free Trial (Non-Payers) with Block Button -->
+      <div class="card" style="background:rgba(255,255,255,0.03);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3>⏳ Free Trial (Unpaid)</h3>
+          <span class="badge" style="background:#fcd34d;color:#000;"><%= nonPayers.length %> users</span>
+        </div>
+        <% if (nonPayers.length === 0) { %>
+          <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">Everyone paid! 🎉</p>
+        <% } else { %>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;font-size:0.85rem;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                  <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Device MAC</th>
+                  <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Time Used</th>
+                  <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Status</th>
+                  <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% nonPayers.forEach(np => {
+                  const timeLeft = 5 - np.minutes_connected;
+                  const isExpired = timeLeft <= 0;
+                  const macShort = np.mac.substring(0, 12);
+                %>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:var(--gray-400);">
+                    <span title="<%= np.mac %>"><%= macShort %>...</span>
+                  </td>
+                  <td style="padding:8px 0;text-align:center;color:var(--gray-400);">
+                    <%= np.minutes_connected %>m / 5m
+                  </td>
+                  <td style="padding:8px 0;text-align:center;">
+                    <% if (isExpired) { %>
+                      <span style="color:#ff6b6b;font-weight:600;background:rgba(255,107,107,0.1);padding:4px 8px;border-radius:4px;">❌ EXPIRED</span>
+                    <% } else { %>
+                      <span style="color:#fcd34d;font-weight:600;background:rgba(252,211,52,0.1);padding:4px 8px;border-radius:4px;">⏳ <%= timeLeft %>m</span>
+                    <% } %>
+                  </td>
+                  <td style="padding:8px 0;text-align:center;">
+                    <% if (isExpired) { %>
+                      <button 
+                        class="btn btn-danger" 
+                        style="padding:4px 8px;font-size:0.75rem;"
+                        onclick="blockDevice('<%= np.mac %>', this)"
+                      >
+                        🚫 Block
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
     </div>
-  <% } %>
-</div>
 
-<!-- Blocked Devices List -->
-<div class="card" style="background:rgba(255,255,255,0.03);margin-top:24px;">
-  <h3 style="margin-bottom:16px;">🚫 Blocked Devices</h3>
-  <div id="blockedList" style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">Loading...</div>
-</div>
-
-<script>
-  // Load blocked devices on page load
-  async function loadBlockedDevices() {
-    try {
-      const res = await fetch('/api/admin/blocked-devices');
-      const data = await res.json();
-      
-      const list = document.getElementById('blockedList');
-      
-      if (!data.success || !data.blocked || data.blocked.length === 0) {
-        list.innerHTML = '<p style="color:var(--gray-400);">No blocked devices</p>';
-        return;
-      }
-      
-      let html = '<div style="overflow-x:auto;"><table style="width:100%;font-size:0.85rem;">';
-      html += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">';
-      html += '<th style="text-align:left;padding:8px 0;color:var(--gray-400);">Device MAC</th>';
-      html += '<th style="text-align:center;padding:8px 0;color:var(--gray-400);">Blocked Since</th>';
-      html += '<th style="text-align:center;padding:8px 0;color:var(--gray-400);">Action</th>';
-      html += '</tr></thead><tbody>';
-      
-      data.blocked.forEach(b => {
-        const date = new Date(b.connected_at).toLocaleTimeString('en-PH');
-        html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">`;
-        html += `<td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:#ff6b6b;">${b.mac.substring(0, 12)}...</td>`;
-        html += `<td style="padding:8px 0;text-align:center;color:var(--gray-400);font-size:0.8rem;">${date}</td>`;
-        html += `<td style="padding:8px 0;text-align:center;"><button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem;" onclick="unblockDevice('${b.mac}', this)">🔓 Unblock</button></td>`;
-        html += `</tr>`;
-      });
-      
-      html += '</tbody></table></div>';
-      list.innerHTML = html;
-    } catch(e) {
-      console.error('Error loading blocked devices:', e);
-    }
-  }
-
-  async function blockDevice(mac, btn) {
-    if (!confirm(`Block ${mac}?`)) return;
-    
-    btn.disabled = true;
-    btn.textContent = '⏳ Blocking...';
-    
-    try {
-      const res = await fetch('/api/admin/block-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `mac=${encodeURIComponent(mac)}`
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        alert('✅ Device blocked! Reload page to see in blocked list.');
-        location.reload();
-      } else {
-        alert('❌ Error: ' + data.error);
-        btn.disabled = false;
-        btn.textContent = '🚫 Block';
-      }
-    } catch(e) {
-      alert('❌ Error: ' + e.message);
-      btn.disabled = false;
-      btn.textContent = '🚫 Block';
-    }
-  }
-
-  async function unblockDevice(mac, btn) {
-    if (!confirm(`Unblock ${mac}?`)) return;
-    
-    btn.disabled = true;
-    btn.textContent = '⏳ Unblocking...';
-    
-    try {
-      const res = await fetch('/api/admin/unblock-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `mac=${encodeURIComponent(mac)}`
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        alert('✅ Device unblocked!');
-        location.reload();
-      } else {
-        alert('❌ Error: ' + data.error);
-        btn.disabled = false;
-        btn.textContent = '🔓 Unblock';
-      }
-    } catch(e) {
-      alert('❌ Error: ' + e.message);
-      btn.disabled = false;
-      btn.textContent = '🔓 Unblock';
-    }
-  }
-
-  // Load blocked devices when page loads
-  window.addEventListener('load', loadBlockedDevices);
-</script>
+    <!-- Blocked Devices List -->
+    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
+      <h3 style="margin-bottom:16px;">🚫 Blocked Devices</h3>
+      <div id="blockedList" style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">Loading...</div>
+    </div>
 
     <!-- Sales by Plan -->
     <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
@@ -537,6 +494,135 @@
       msg.innerHTML = `<div style="color:#ff6b6b;">❌ Error</div>`;
     }
   }
+
+  // Load blocked devices on page load
+  async function loadBlockedDevices() {
+    try {
+      const res = await fetch('/api/admin/blocked-devices');
+      const data = await res.json();
+      
+      const list = document.getElementById('blockedList');
+      
+      if (!data.success || !data.blocked || data.blocked.length === 0) {
+        list.innerHTML = '<p style="color:var(--gray-400);">No blocked devices</p>';
+        return;
+      }
+      
+      let html = '<div style="overflow-x:auto;"><table style="width:100%;font-size:0.85rem;">';
+      html += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">';
+      html += '<th style="text-align:left;padding:8px 0;color:var(--gray-400);">Device MAC</th>';
+      html += '<th style="text-align:center;padding:8px 0;color:var(--gray-400);">Blocked Since</th>';
+      html += '<th style="text-align:center;padding:8px 0;color:var(--gray-400);">Action</th>';
+      html += '</tr></thead><tbody>';
+      
+      data.blocked.forEach(b => {
+        const date = new Date(b.connected_at).toLocaleTimeString('en-PH');
+        html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">`;
+        html += `<td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:#ff6b6b;">${b.mac.substring(0, 12)}...</td>`;
+        html += `<td style="padding:8px 0;text-align:center;color:var(--gray-400);font-size:0.8rem;">${date}</td>`;
+        html += `<td style="padding:8px 0;text-align:center;"><button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem;" onclick="unblockDevice('${b.mac}', this)">🔓 Unblock</button></td>`;
+        html += `</tr>`;
+      });
+      
+      html += '</tbody></table></div>';
+      list.innerHTML = html;
+    } catch(e) {
+      console.error('Error loading blocked devices:', e);
+    }
+  }
+
+  async function blockDevice(mac, btn) {
+    if (!confirm(`Block ${mac}?`)) return;
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Blocking...';
+    
+    try {
+      const res = await fetch('/api/admin/block-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `mac=${encodeURIComponent(mac)}`
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert('✅ Device blocked! Reload page to see in blocked list.');
+        location.reload();
+      } else {
+        alert('❌ Error: ' + data.error);
+        btn.disabled = false;
+        btn.textContent = '🚫 Block';
+      }
+    } catch(e) {
+      alert('❌ Error: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = '🚫 Block';
+    }
+  }
+
+  async function unblockDevice(mac, btn) {
+    if (!confirm(`Unblock ${mac}?`)) return;
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Unblocking...';
+    
+    try {
+      const res = await fetch('/api/admin/unblock-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `mac=${encodeURIComponent(mac)}`
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert('✅ Device unblocked!');
+        location.reload();
+      } else {
+        alert('❌ Error: ' + data.error);
+        btn.disabled = false;
+        btn.textContent = '🔓 Unblock';
+      }
+    } catch(e) {
+      alert('❌ Error: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = '🔓 Unblock';
+    }
+  }
+
+  async function blockRepeater(mac, macShort, btn) {
+    if (!confirm(`🚫 Block repeater ${macShort}...?\n\nThey will lose internet access.`)) return;
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ BLOCKING...';
+    btn.style.opacity = '0.6';
+    
+    try {
+      const res = await fetch('/api/admin/block-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `mac=${encodeURIComponent(mac)}`
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert(`✅ Repeater blocked!\n\n${macShort}... is now blocked from your WiFi.`);
+        location.reload();
+      } else {
+        alert(`❌ Error: ${data.error}`);
+        btn.disabled = false;
+        btn.textContent = '🚫 BLOCK NOW';
+        btn.style.opacity = '1';
+      }
+    } catch(e) {
+      alert(`❌ Error: ${e.message}`);
+      btn.disabled = false;
+      btn.textContent = '🚫 BLOCK NOW';
+      btn.style.opacity = '1';
+    }
+  }
+
+  // Load blocked devices when page loads
+  window.addEventListener('load', loadBlockedDevices);
 </script>
 
 </body>
