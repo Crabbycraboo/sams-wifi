@@ -1,4 +1,4 @@
-// routes/admin.js - COMPLETE VERSION showing all features
+// routes/admin.js - WITH REPEATER DETECTION
 
 const express = require('express');
 const router = express.Router();
@@ -48,7 +48,7 @@ router.post('/login', (req, res) => {
   }
 });
 
-// ─── DASHBOARD (with ALL features) ────────────────────────────────────────────
+// ─── DASHBOARD (with ALL features + REPEATERS) ────────────────────────────────
 router.get('/', (req, res) => {
   try {
     if (!req.session.isAdmin) return res.redirect('/admin/login');
@@ -57,7 +57,7 @@ router.get('/', (req, res) => {
       getActiveUsers, getSalesStats, getLoadRecommendation,
       getVoucherCounts, getUnusedCounts, getSleepMode,
       getBackups, getRefundHistory, getUnreadNotifications,
-      getWifiBatches, query
+      getWifiBatches, getRepeaterDevices, query
     } = getDb();
 
     // Initialize all data with safe defaults
@@ -68,6 +68,7 @@ router.get('/', (req, res) => {
     let unusedCounts = { '5min':0, '15min':0, '30min':0, '1hr':0, '3hr':0 };
     let sleepMode = false;
     let nonPayers = [];
+    let suspiciousDevices = [];
     let backups = [];
     let refunds = [];
     let notifications = [];
@@ -82,11 +83,10 @@ router.get('/', (req, res) => {
     try { sleepMode = getSleepMode() || false; } catch(e) { console.warn('[Dashboard] sleepMode:', e.message); }
 
     // Fetch non-payers (free trial users without vouchers)
-  try {
-const now = Date.now();
-const oneHourAgo = now - 3600000;
-const { query } = getDb();  
-const allConnections = query(`
+    try {
+      const now = Date.now();
+      const oneHourAgo = now - 3600000;
+      const allConnections = query(`
         SELECT mac, connected_at, has_voucher
         FROM connections
         WHERE has_voucher = 0
@@ -102,6 +102,11 @@ const allConnections = query(`
         trial_status: Math.floor((now - conn.connected_at) / 1000 / 60) >= 5 ? 'EXPIRED' : 'ACTIVE'
       }));
     } catch(e) { console.warn('[Dashboard] nonPayers:', e.message); }
+
+    // Fetch suspicious repeaters (devices reconnecting 3+ times in 1 hour)
+    try {
+      suspiciousDevices = getRepeaterDevices() || [];
+    } catch(e) { console.warn('[Dashboard] suspiciousDevices:', e.message); }
 
     // Fetch backups
     try { backups = getBackups() || []; } catch(e) { console.warn('[Dashboard] backups:', e.message); }
@@ -125,6 +130,7 @@ const allConnections = query(`
       unusedCounts,
       sleepMode,
       nonPayers,
+      suspiciousDevices,  // ← NEW: suspicious repeaters
       backups,
       refunds,
       notifications,
@@ -149,6 +155,35 @@ router.post('/sleep-mode', (req, res) => {
   }
 });
 
+// ─── VOUCHERS PAGE ────────────────────────────────────────────────────────────
+router.get('/vouchers', (req, res) => {
+  if (!req.session.isAdmin) return res.redirect('/admin/login');
+  try {
+    const status = req.query.status || 'all';
+    const { getAllVouchers, getVoucherCounts } = getDb();
+    const vouchers = getAllVouchers({ status, page: 1, limit: 100 });
+    const counts = getVoucherCounts();
+    res.render('admin/vouchers', { title: 'Vouchers', vouchers, counts, currentStatus: status });
+  } catch(e) {
+    console.error('[Vouchers Page]', e);
+    res.status(500).send(`Error: ${e.message}`);
+  }
+});
+
+router.post('/vouchers/generate', (req, res) => {
+  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const { plan, count } = req.body;
+    const { generateVouchers } = getDb();
+    const batchId = `batch-${Date.now()}`;
+    const result = generateVouchers(plan, parseInt(count), batchId, false);
+    res.json({ success: true, count: result.codes.length, codes: result.codes });
+  } catch(e) {
+    console.error('[Generate Vouchers]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── CHANGE PASSWORD ──────────────────────────────────────────────────────────
 router.post('/change-password', (req, res) => {
   if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
@@ -156,19 +191,17 @@ router.post('/change-password', (req, res) => {
     const { current, newpass, confirm } = req.body;
     const { getAdmin, updateAdminPassword } = getDb();
 
-    const admin = getAdmin(req.session.adminUser);
-    if (!admin || !bcrypt.compareSync(current, admin.password_hash)) {
-      return res.json({ success: false, error: 'Current password incorrect' });
-    }
-    if (newpass.length < 6) {
-      return res.json({ success: false, error: 'Min 6 characters' });
-    }
     if (newpass !== confirm) {
       return res.json({ success: false, error: 'Passwords do not match' });
     }
 
-    const hash = bcrypt.hashSync(newpass, 10);
-    updateAdminPassword(req.session.adminUser, hash);
+    const admin = getAdmin(req.session.adminUser);
+    if (!admin || !bcrypt.compareSync(current, admin.password_hash)) {
+      return res.json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    const newHash = bcrypt.hashSync(newpass, 10);
+    updateAdminPassword(req.session.adminUser, newHash);
     res.json({ success: true });
   } catch(e) {
     console.error('[Change Password]', e);
@@ -176,62 +209,10 @@ router.post('/change-password', (req, res) => {
   }
 });
 
-// ─── VOUCHERS PAGE ────────────────────────────────────────────────────────────
-router.get('/vouchers', (req, res) => {
-  try {
-    if (!req.session.isAdmin) return res.redirect('/admin/login');
-
-    const { getAllVouchers, getVoucherCounts } = getDb();
-    const status = req.query.status || 'all';
-    const page = parseInt(req.query.page) || 1;
-
-    const vouchers = getAllVouchers({ status, page }) || [];
-    const counts = getVoucherCounts() || { all:0, unused:0, active:0, expired:0, refunded:0 };
-
-    res.render('admin/vouchers', {
-      title: 'Vouchers',
-      adminUser: req.session.adminUser,
-      vouchers,
-      counts,
-      currentStatus: status,
-      currentPage: page
-    });
-  } catch(e) {
-    console.error('[Vouchers Page]', e);
-    res.status(500).send(`<h1>Vouchers Error</h1><p>${e.message}</p><a href="/admin">Back</a>`);
-  }
-});
-
-// ─── GENERATE VOUCHERS ────────────────────────────────────────────────────────
-router.post('/vouchers/generate', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    const { plan, count } = req.body;
-    const { generateVouchers } = getDb();
-    const batchId = `batch-${Date.now()}`;
-
-    const result = generateVouchers(plan, parseInt(count), batchId, false);
-    res.json({
-      success: true,
-      codes: result.codes,
-      count: result.codes.length,
-      batchId
-    });
-  } catch(e) {
-    console.error('[Generate Vouchers]', e);
-    res.status(500).json({ success: false, error: e.message });
-  }
-});
-
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
-  try {
-    req.session.destroy();
-    res.redirect('/admin/login');
-  } catch(e) {
-    console.error('[Logout]', e);
-    res.redirect('/');
-  }
+  req.session.destroy();
+  res.redirect('/admin/login');
 });
 
 module.exports = router;
