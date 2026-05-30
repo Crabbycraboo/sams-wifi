@@ -1,4 +1,4 @@
-// db/database.js — with auto-cleanup, backup/export, and refund system
+// db/database.js — with repeater detection
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
@@ -89,12 +89,12 @@ async function initDb() {
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS connections (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  mac TEXT NOT NULL,
-  connected_at INTEGER NOT NULL,
-  has_voucher INTEGER DEFAULT 0,
-  blocked INTEGER DEFAULT 0
-)`);
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mac TEXT NOT NULL,
+    connected_at INTEGER NOT NULL,
+    has_voucher INTEGER DEFAULT 0,
+    blocked INTEGER DEFAULT 0
+  )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS backups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,21 +102,6 @@ async function initDb() {
     created_at INTEGER NOT NULL,
     size INTEGER
   )`);
-
-  // ─── Migrations (safely add missing columns to existing databases) ──────────
-  const migrations = [
-    { sql: `ALTER TABLE connections ADD COLUMN blocked INTEGER DEFAULT 0`,               label: 'blocked column' },
-    { sql: `ALTER TABLE connections ADD COLUMN free_trial_started INTEGER DEFAULT NULL`, label: 'free_trial_started column' },
-    { sql: `ALTER TABLE vouchers ADD COLUMN refunded INTEGER DEFAULT 0`,                 label: 'refunded column' },
-  ];
-  for (const m of migrations) {
-    try {
-      db.run(m.sql);
-      console.log(`[DB] Migration applied: ${m.label}`);
-    } catch(e) {
-      // Column already exists — safe to ignore
-    }
-  }
 
   const adminRows = db.exec(`SELECT id FROM admin_users WHERE username = 'admin'`);
   if (!adminRows.length || !adminRows[0].values.length) {
@@ -156,7 +141,6 @@ function run(sql, params = []) {
   saveDb();
 }
 
-// ─── PLANS — IDs match vouchers page radio values ─────────────────────────────
 const PLANS = [
   { id: '5min',  name: '₱2 – 5 Min',   price: 2,  duration_ms: 5  * 60 * 1000 },
   { id: '15min', name: '₱5 – 15 Min',  price: 5,  duration_ms: 15 * 60 * 1000 },
@@ -165,7 +149,6 @@ const PLANS = [
   { id: '3hr',   name: '₱60 – 3 Hrs',  price: 60, duration_ms: 3  * 60 * 60 * 1000 },
 ];
 
-// ─── Rate limiting ────────────────────────────────────────────────────────────
 const RATE_LIMITS = {
   code_attempt: { windowMs: 5 * 60 * 1000, maxAttempts: 10 },
   admin_login:  { windowMs: 15 * 60 * 1000, maxAttempts: 5 },
@@ -200,7 +183,6 @@ function pruneRateLimits() {
   saveDb();
 }
 
-// ─── Device fingerprinting ────────────────────────────────────────────────────
 function buildDeviceId(req) {
   const ip   = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
   const ua   = req.headers['user-agent'] || 'unknown';
@@ -211,14 +193,12 @@ function buildDeviceId(req) {
   return 'dev_' + Math.abs(hash).toString(36);
 }
 
-// ─── WiFi password generation ─────────────────────────────────────────────────
 function generateWifiPassword() {
   const words = ['mango','taho','halo','puto','sago','buko','mais','tuyo','tinapay','kape'];
   const nums  = Math.floor(100 + Math.random() * 900);
   return words[Math.floor(Math.random() * words.length)] + nums;
 }
 
-// ─── Voucher generation ───────────────────────────────────────────────────────
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = 'SAM-';
@@ -251,7 +231,6 @@ function generateVouchers(plan, count, batchId, useWifiPassword = false) {
   return { codes: generated, wifiPassword };
 }
 
-// ─── Redemption ───────────────────────────────────────────────────────────────
 function redeemVoucher(code, deviceId) {
   const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
   if (!voucher) return { success: false, message: 'Code not found. Check your voucher and try again.' };
@@ -283,7 +262,6 @@ function checkExpiredVouchers() {
   return expired.length;
 }
 
-// ─── Refund System ────────────────────────────────────────────────────────────
 function refundVoucher(code) {
   const voucher = queryOne(`SELECT * FROM vouchers WHERE code = ?`, [code.toUpperCase().trim()]);
   if (!voucher) return { success: false, error: 'Voucher not found' };
@@ -296,7 +274,6 @@ function getRefundHistory() {
   return query(`SELECT code, plan, price, created_at FROM vouchers WHERE refunded=1 ORDER BY created_at DESC LIMIT 50`);
 }
 
-// ─── Admin queries ────────────────────────────────────────────────────────────
 function getActiveUsers() {
   const now = Date.now();
   return query(`SELECT code, plan, price, device_id, started_at, expires_at, (expires_at - ?) as ms_remaining
@@ -369,7 +346,6 @@ function getWifiBatches() {
   return query(`SELECT * FROM wifi_batches ORDER BY created_at DESC LIMIT 10`);
 }
 
-// ─── Sleep Mode ───────────────────────────────────────────────────────────────
 function setSleepMode(val) {
   db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('sleep_mode', ?)`, [val ? '1' : '0']);
   saveDb();
@@ -382,7 +358,6 @@ function getSleepMode() {
   } catch(e) { return false; }
 }
 
-// ─── Notifications ────────────────────────────────────────────────────────────
 function createNotification(type, message, data = {}) {
   run(`INSERT INTO notifications (type, message, data, created_at) VALUES (?, ?, ?, ?)`,
     [type, message, JSON.stringify(data), Date.now()]);
@@ -396,7 +371,6 @@ function markNotificationRead(id) {
   run(`UPDATE notifications SET read=1 WHERE id=?`, [id]);
 }
 
-// ─── Connection Tracking ──────────────────────────────────────────────────────
 function trackConnection(mac) {
   const existing = queryOne(`SELECT id FROM connections WHERE mac=?`, [mac]);
   if (!existing) {
@@ -418,7 +392,6 @@ function hasValidVoucher(mac) {
   return conn ? conn.has_voucher === 1 : false;
 }
 
-// ─── BACKUP & CLEANUP ─────────────────────────────────────────────────────────
 function createBackup() {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -480,9 +453,11 @@ function scheduleAutoCleanup() {
   setTimeout(() => { cleanupExpiredVouchers(); setInterval(cleanupExpiredVouchers, 24 * 60 * 60 * 1000); }, target - now);
   console.log(`[CLEANUP] Scheduled daily cleanup`);
 }
+
+// ─── REPEATER DETECTION ────────────────────────────────────────────────────
+// Detect devices that reconnect 3+ times in the last hour (free trial abusers)
 function getRepeaterDevices() {
   try {
-    // Find MACs that connected 3+ times in the last hour
     return query(`
       SELECT mac, COUNT(*) as connection_count, MAX(connected_at) as last_connected
       FROM connections
@@ -491,14 +466,16 @@ function getRepeaterDevices() {
       HAVING COUNT(*) >= 3
       ORDER BY connection_count DESC
       LIMIT 50
-    `, [Date.now() - 60 * 60 * 1000]);  // Last hour
+    `, [Date.now() - 60 * 60 * 1000]);
   } catch(e) {
+    console.warn('[Repeater Detection Error]', e.message);
     return [];
   }
 }
+
 module.exports = {
   initDb, PLANS,
-    getRepeaterDevices,generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
+  generateVouchers, redeemVoucher, expireVoucher, checkExpiredVouchers,
   getActiveUsers, getSalesStats, getLoadRecommendation,
   getAllVouchers, getAdmin, updateAdminPassword, getVoucherCounts, getUnusedCounts,
   getWifiBatches, checkRateLimit, pruneRateLimits, buildDeviceId,
@@ -508,5 +485,6 @@ module.exports = {
   refundVoucher, getRefundHistory,
   createBackup, getBackups,
   cleanupExpiredVouchers,
+  getRepeaterDevices,  // ← ADD THIS EXPORT
   queryOne, query, run,
 };
