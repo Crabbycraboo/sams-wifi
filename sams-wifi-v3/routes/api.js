@@ -1,148 +1,130 @@
-// routes/api.js
 const express = require('express');
 const router = express.Router();
-const {
-  getUnreadNotifications, markNotificationRead,
-  getConnectionTime, markVoucherPaid, trackConnection,
-  queryOne, query, run, getActiveUsers,
-  refundVoucher, getRefundHistory, createBackup, getBackups,
-  buildDeviceId
-} = require('../db/database');
+const { supabase } = require('../db/database');
 
-router.get('/gateway/check', (req, res) => {
-  try {
-    const rawMac = req.query.mac;
-    if (!rawMac) return res.send('block');
-    const mac = rawMac.toLowerCase().replace(/[^0-9a-f]/g, '').replace(/(.{2})(?=.)/g, '$1:');
-    if (mac.length !== 17) return res.send('block');
-    const connRecord = queryOne(`SELECT blocked, connected_at, has_voucher FROM connections WHERE mac=?`, [mac]);
-    if (connRecord && connRecord.blocked === 1) return res.send('block');
-    trackConnection(mac);
-    const macNoColon = mac.replace(/:/g, '');
-    const validVoucher = queryOne(`
-      SELECT code FROM vouchers
-      WHERE status='active' AND expires_at > ?
-      AND (device_id LIKE ? OR device_id LIKE ?)
-      LIMIT 1
-    `, [Date.now(), '%' + mac + '%', '%' + macNoColon + '%']);
-    if (validVoucher) {
-      run(`UPDATE connections SET has_voucher=1 WHERE mac=?`, [mac]);
-      return res.send('allow');
-    }
-    const minutesConnected = connRecord
-      ? Math.floor((Date.now() - connRecord.connected_at) / 60000)
-      : 0;
-    if (minutesConnected < 5) return res.send('allow');
+// 1. ROUTER GATEWAY CHECK ENDPOINT
+// Your TP-Link router pings this to ask: "Should I let this MAC address browse?"
+router.get('/gateway/check', async (req, res) => {
+  const clientMac = req.query.mac;
+
+  if (!clientMac) {
     return res.send('block');
-  } catch(e) {
-    console.error('[Gateway Error]', e);
-    res.send('allow');
+  }
+
+  const cleanMac = clientMac.trim();
+
+  try {
+    // Look up if there's an active session matching this hardware signature
+    const { data: session, error } = await supabase
+      .from('sessions')
+      .select('*, vouchers(status, expires_at)')
+      .eq('mac_address', cleanMac)
+      .maybeSingle();
+
+    if (error || !session || !session.vouchers) {
+      return res.send('block');
+    }
+
+    // Check if the voucher has hit its deadline expiration
+    const expirationTime = new Date(session.vouchers.expires_at).getTime();
+    if (Date.now() > expirationTime) {
+      // Clean up the expired tracking records automatically
+      await supabase.from('sessions').delete().eq('mac_address', cleanMac);
+      await supabase.from('vouchers').update({ status: 'expired' }).eq('token', session.voucher_token);
+      return res.send('block');
+    }
+
+    // If session is active and time hasn't run out, tell the router to grant internet!
+    return res.send('allow');
+  } catch (err) {
+    console.error('API Gateway Check Failure:', err.message);
+    return res.send('block'); // Fallback to safe mode on error
   }
 });
 
-router.get('/gateway/trial-time', (req, res) => {
-  try {
-    const mac = req.query.mac?.toLowerCase();
-    if (!mac) return res.send('0');
-    res.send(String(getConnectionTime(mac)));
-  } catch(e) { res.send('0'); }
-});
+// 2. FREE TRIAL ACTIVATION REGISTRATION ENGINE
+router.post('/trial/activate', async (req, res) => {
+  const { mac } = req.body;
 
-router.post('/gateway/mark-paid', (req, res) => {
-  try {
-    const mac = req.query.mac?.toLowerCase();
-    if (!mac) return res.json({ error: 'no mac' });
-    markVoucherPaid(mac);
-    res.json({ success: true });
-  } catch(e) { res.json({ error: e.message }); }
-});
-
-router.post('/admin/block-device', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    const mac = req.body.mac?.toLowerCase();
-    if (!mac) return res.json({ error: 'no mac' });
-    trackConnection(mac);
-    run(`UPDATE connections SET blocked=1 WHERE mac=?`, [mac]);
-    res.json({ success: true });
-  } catch(e) { res.json({ error: e.message }); }
-});
-
-router.post('/admin/unblock-device', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    const mac = req.body.mac?.toLowerCase();
-    if (!mac) return res.json({ error: 'no mac' });
-    run(`UPDATE connections SET blocked=0 WHERE mac=?`, [mac]);
-    res.json({ success: true });
-  } catch(e) { res.json({ error: e.message }); }
-});
-
-router.get('/admin/blocked-devices', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    res.json(query(`SELECT mac, connected_at FROM connections WHERE blocked=1 ORDER BY connected_at DESC`));
-  } catch(e) { res.json([]); }
-});
-
-router.get('/session-status', (req, res) => {
-  if (!req.session.voucher) return res.json({ status: 'no_session' });
-  const v = req.session.voucher;
-  const now = Date.now();
-  const currentDevice = buildDeviceId(req);
-  if (currentDevice !== v.device_id) {
-    req.session.destroy();
-    return res.json({ status: 'device_mismatch' });
+  if (!mac) {
+    return res.status(400).json({ success: false, message: 'Missing device fingerprint.' });
   }
-  const dbVoucher = queryOne('SELECT status, expires_at FROM vouchers WHERE code = ?', [v.code]);
-  if (!dbVoucher || dbVoucher.status === 'expired') {
-    req.session.destroy();
-    return res.json({ status: 'expired' });
-  }
-  const msRemaining = dbVoucher.expires_at - now;
-  if (msRemaining <= 0) {
-    req.session.destroy();
-    return res.json({ status: 'expired' });
-  }
-  res.json({ status: 'active', msRemaining, code: v.code, plan: v.plan, expires_at: dbVoucher.expires_at });
-});
 
-router.get('/notifications', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json(getUnreadNotifications()); } catch(e) { res.json([]); }
-});
+  const cleanMac = mac.trim();
 
-router.post('/notifications/:id/read', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try { markNotificationRead(req.params.id); res.json({ success: true }); } catch(e) { res.json({ success: false }); }
-});
-
-router.get('/admin/active-users', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json(getActiveUsers()); } catch(e) { res.json([]); }
-});
-
-router.post('/admin/refund', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const result = refundVoucher(req.body.code);
-    res.json(result.success ? { success: true, refunded_amount: result.refunded_amount } : { success: false, error: result.error });
-  } catch(e) { res.json({ success: false, error: e.message }); }
-});
+    // Check if global system settings allow trials right now
+    const { data: trialSetting } = await supabase
+      .from('admin_settings')
+      .select('setting_value')
+      .eq('setting_key', 'trial_allowed')
+      .single();
 
-router.get('/admin/refunds', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json(getRefundHistory()); } catch(e) { res.json([]); }
-});
+    if (trialSetting?.setting_value !== 'true') {
+      return res.status(403).json({ success: false, message: 'Ang free trial ay kasalukuyang sarado.' });
+    }
 
-router.get('/admin/backups', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json(getBackups()); } catch(e) { res.json([]); }
-});
+    // ABUSE PREVENTION MATRIX CHECK: 
+    // Scan audit logs to see if this MAC address has already claimed a trial today
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: pastTrials, error: logError } = await supabase
+      .from('logs')
+      .select('id')
+      .eq('mac_address', cleanMac)
+      .eq('event_type', 'trial_exploit')
+      .gt('created_at', twentyFourHoursAgo);
 
-router.post('/admin/backup', (req, res) => {
-  if (!req.session.isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json(createBackup()); } catch(e) { res.json({ success: false, error: e.message }); }
+    if (pastTrials && pastTrials.length >= 3) {
+      // Log the abuse attempt automatically
+      await supabase.from('logs').insert({
+        mac_address: cleanMac,
+        event_type: 'trial_abuse_flag',
+        description: `Device attempted to loop free trial. Blocked by system.`
+      });
+      return res.status(429).json({ success: false, message: 'Naabot mo na ang limitasyon para sa araw na ito.' });
+    }
+
+    const rightNow = new Date();
+    const trialDurationMinutes = 5; // Standard 5 Minute Free Pass
+    const expirationTimestamp = new Date(rightNow.getTime() + trialDurationMinutes * 60 * 1000).toISOString();
+
+    // Create a shadow voucher for this trial user to keep data relational
+    const shadowToken = `TRIAL-${cleanMac.replace(/:/g, '').slice(-6).toUpperCase()}`;
+
+    // Insert shadow voucher
+    await supabase.from('vouchers').upsert({
+      token: shadowToken,
+      duration_minutes: trialDurationMinutes,
+      status: 'active',
+      expires_at: expirationTimestamp
+    });
+
+    // Create the active hardware session mapping
+    await supabase.from('sessions').upsert({
+      voucher_token: shadowToken,
+      mac_address: cleanMac,
+      ip_address: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '192.168.1.1',
+      last_ping: rightNow.toISOString()
+    }, { onConflict: 'voucher_token' });
+
+    // Track the entry inside audit records
+    await supabase.from('logs').insert({
+      mac_address: cleanMac,
+      event_type: 'trial_exploit',
+      description: `Free 5-minute activation granted to device.`
+    });
+
+    // Store structural credentials inside client session storage
+    req.session.voucherToken = shadowToken;
+    req.session.expiresAt = expirationTimestamp;
+    req.session.macAddress = cleanMac;
+
+    return res.json({ success: true, redirect: '/portal' });
+
+  } catch (err) {
+    console.error('Free Trial Engine Error:', err.message);
+    return res.status(500).json({ success: false, message: 'Nagkaroon ng server error.' });
+  }
 });
 
 module.exports = router;
