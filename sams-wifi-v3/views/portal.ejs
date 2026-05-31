@@ -206,71 +206,18 @@
 
   <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
 
-  <script>
-    const expiresAt  = <%= voucher.expires_at %>;
-    const startedAt  = <%= voucher.started_at || Date.now() %>;
-    const totalMs    = expiresAt - startedAt;
-    const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65
-
-    const ring       = document.getElementById('timerRing');
-    const timerText  = document.getElementById('timerText');
-    const warningBar = document.getElementById('warningBar');
-    const expiryTime = document.getElementById('expiryTime');
-
-    // Show expiry time localized to Philippines timezone
-    expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
-    ring.style.strokeDasharray  = CIRCUMFERENCE;
-    ring.style.strokeDashoffset = 0;
-
-    function updateTimer() {
-      const now = Date.now();
-      const ms  = expiresAt - now;
-
-      if (ms <= 0) {
-        timerText.textContent = '00:00';
-        timerText.style.color = 'var(--danger)';
-        ring.style.strokeDashoffset = CIRCUMFERENCE;
-        ring.style.stroke = 'var(--danger)';
-        // FIXED: Added absolute route leading slash
-        window.location.href = '/expired';
-        return;
-      }
-
-      const mins = Math.floor(ms / 60000);
-      const secs = Math.floor((ms % 60000) / 1000);
-      timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-
-      // Progress ring calculations
-      const progress = ms / totalMs;
-      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
-
-      if (ms < 60000) {
-        timerText.style.color = 'var(--danger)';
-        ring.style.stroke = 'var(--danger)';
-      } else if (ms < 2 * 60000) {
-        timerText.style.color = '#fcd34d';
-        ring.style.stroke = '#fcd34d';
-        warningBar.style.display = 'block';
-      }
-    }
-
-    // Poll server to verify active session parameters
-    async function checkSession() {
-      try {
-        const res  = await fetch('/api/session-status');
-        const data = await res.json();
-        if (data.status === 'expired' || data.status === 'no_session' || data.status === 'device_mismatch') {
-          // FIXED: Added absolute route leading slash
-          window.location.href = '/expired';
-        }
-      } catch(e) { /* network hiccup — keep running */ }
-    }
-
-    setInterval(updateTimer, 500);
-    updateTimer();
-
-    setInterval(checkSession, 15000);
-    checkSession();
-  </script>
+<script>
+  let ms = <%= msRemaining %>;
+  const timerText = document.getElementById('timer');
+  
+  function update() {
+    if (ms <= 0) { window.location.href = '/expired'; return; }
+    ms -= 1000;
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+  }
+  setInterval(update, 1000);
+</script>
 </body>
 </html>
