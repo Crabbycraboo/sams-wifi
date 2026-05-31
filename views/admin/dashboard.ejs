@@ -9,7 +9,6 @@
 </head>
 <body class="admin-body">
 
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <div class="brand-title"><span>Sam's</span> WiFi</div>
@@ -17,23 +16,16 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">Main</div>
-    <a href="/admin" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a>
-    <a href="/admin/vouchers" class="nav-link"><span class="nav-icon">🎫</span> Vouchers</a>
-    <div class="nav-section-label" style="margin-top:12px;">Settings</div>
-    <a href="#change-password" class="nav-link" onclick="showPasswordModal(); return false;"><span class="nav-icon">🔑</span> Change Password</a>
+    <a href="/admin/dashboard" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a>
+    <div class="nav-section-label" style="margin-top:12px;">System</div>
     <a href="/" class="nav-link" target="_blank"><span class="nav-icon">🌐</span> Customer Portal</a>
+    <a href="/admin/logout" class="nav-link"><span class="nav-icon">⏏</span> Logout</a>
   </nav>
   <div class="sidebar-footer">
-    Logged in as <span class="admin-name"><%= adminUser %></span><br>
-    <form action="/admin/logout" method="POST" style="margin-top:8px;">
-      <button type="submit" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:0;font-family:var(--font);">
-        ⏏ Logout
-      </button>
-    </form>
+    Sam's WiFi Admin
   </div>
 </aside>
 
-<!-- Main Content -->
 <main class="admin-main">
   <div class="admin-topbar">
     <h1>📊 Dashboard</h1>
@@ -42,587 +34,156 @@
 
   <div class="admin-content">
 
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div style="padding:12px 16px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;border-radius:8px;margin-bottom:20px;">
+        ⚠️ <%= error %>
+      </div>
+    <% } %>
+
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div style="padding:12px 16px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);color:#4ade80;border-radius:8px;margin-bottom:20px;">
+        ✅ <%= success %>
+      </div>
+    <% } %>
+
     <!-- Sleep Mode Toggle -->
-    <div style="margin-bottom:24px;padding:16px 20px;background:<%= sleepMode ? 'rgba(251,191,36,0.1)' : 'rgba(255,255,255,0.04)' %>;border:1px solid <%= sleepMode ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.08)' %>;border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="margin-bottom:24px;padding:16px 20px;background:<%= (typeof settings !== 'undefined' && settings.sleep_mode === 'true') ? 'rgba(251,191,36,0.1)' : 'rgba(255,255,255,0.04)' %>;border:1px solid <%= (typeof settings !== 'undefined' && settings.sleep_mode === 'true') ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.08)' %>;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div>
-        <div style="font-weight:700;font-size:0.95rem;color:<%= sleepMode ? '#fcd34d' : 'var(--white)' %>;">
-          <%= sleepMode ? '😴 Sleep Mode is ON' : '☀️ Sleep Mode is OFF' %>
+        <div style="font-weight:700;font-size:0.95rem;">
+          <%= (typeof settings !== 'undefined' && settings.sleep_mode === 'true') ? '😴 Sleep Mode ON' : '☀️ Sleep Mode OFF' %>
         </div>
         <div style="font-size:0.8rem;color:var(--gray-400);margin-top:2px;">
-          <%= sleepMode ? '₱2 vouchers blocked. GCash QR shown.' : 'All plans available.' %>
+          <%= (typeof settings !== 'undefined' && settings.sleep_mode === 'true') ? 'Portal shows sleep message.' : 'All plans available to customers.' %>
         </div>
       </div>
-      <button id="sleepBtn" onclick="toggleSleep()" class="btn <%= sleepMode ? 'btn-warning' : 'btn-outline' %>" style="min-width:140px;">
-        <%= sleepMode ? '☀️ Wake Up' : '😴 Go to Sleep' %>
+      <button id="sleepBtn" onclick="toggleSetting('sleep_mode')" class="btn btn-outline" style="min-width:140px;">
+        <%= (typeof settings !== 'undefined' && settings.sleep_mode === 'true') ? '☀️ Wake Up' : '😴 Sleep Mode' %>
       </button>
     </div>
 
-    <!-- Top Stats Grid -->
+    <!-- Stats -->
     <div class="grid-4" style="margin-bottom:24px;">
       <div class="stat-card" style="--stat-color:var(--success);">
         <div class="stat-icon">👥</div>
-        <div class="stat-label">Active Users</div>
-        <div class="stat-value"><%= activeUsers.length %></div>
-        <div class="stat-sub">Currently paid</div>
-      </div>
-      <div class="stat-card" style="--stat-color:var(--blue-300);">
-        <div class="stat-icon">💰</div>
-        <div class="stat-label">Today's Sales</div>
-        <div class="stat-value">₱<%= sales.todaySales.total %></div>
-        <div class="stat-sub"><%= sales.todaySales.count %> sessions</div>
+        <div class="stat-label">Active Sessions</div>
+        <div class="stat-value"><%= (typeof activeSessions !== 'undefined' ? activeSessions.length : 0) %></div>
+        <div class="stat-sub">Connected now</div>
       </div>
       <div class="stat-card" style="--stat-color:var(--accent);">
         <div class="stat-icon">🎫</div>
-        <div class="stat-label">Unused Vouchers</div>
-        <div class="stat-value"><%= voucherCounts.unused %></div>
+        <div class="stat-label">Unredeemed</div>
+        <div class="stat-value"><%= (typeof voucherCounts !== 'undefined' ? voucherCounts.unredeemed : 0) %></div>
         <div class="stat-sub">Ready to sell</div>
       </div>
-      <div class="stat-card" style="--stat-color:var(--warning);">
-        <div class="stat-icon">📈</div>
-        <div class="stat-label">Total Revenue</div>
-        <div class="stat-value">₱<%= sales.totalSales.total %></div>
-        <div class="stat-sub"><%= sales.totalSales.count %> all-time</div>
+      <div class="stat-card" style="--stat-color:#667eea;">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">Used Vouchers</div>
+        <div class="stat-value"><%= (typeof voucherCounts !== 'undefined' ? voucherCounts.active : 0) %></div>
+        <div class="stat-sub">Active/redeemed</div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--gray-400);">
+        <div class="stat-icon">⌛</div>
+        <div class="stat-label">Expired</div>
+        <div class="stat-value"><%= (typeof voucherCounts !== 'undefined' ? voucherCounts.expired : 0) %></div>
+        <div class="stat-sub">All time</div>
       </div>
     </div>
 
-    <!-- Load Recommendation -->
-    <div style="margin-bottom:24px;padding:20px;background:rgba(102,126,234,0.1);border:1px solid rgba(102,126,234,0.3);border-radius:var(--radius);">
-      <h3 style="margin:0 0 12px 0;font-size:0.95rem;">📶 Load Recommendation</h3>
-      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
-        <div style="font-size:28px;font-weight:bold;color:#667eea;">₱<%= loadRec.recommendation.load %></div>
-        <div style="color:var(--gray-400);font-size:0.9rem;">
-          for <strong style="color:var(--white);"><%= loadRec.recommendation.period %></strong>
-          <br><small style="color:var(--gray-500);">Based on <%= loadRec.activeUsers %> active users</small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Paid vs Trial Stats -->
-    <div class="grid-2" style="margin-bottom:24px;">
-      <div style="padding:16px;background:rgba(76,209,128,0.1);border:1px solid rgba(76,209,128,0.3);border-radius:var(--radius);text-align:center;">
-        <div style="font-size:32px;font-weight:bold;color:#4ade80;"><%= activeUsers.length %></div>
-        <div style="font-size:0.85rem;color:var(--gray-400);margin-top:4px;">✅ Customers Paying Now</div>
-      </div>
-      <div style="padding:16px;background:rgba(252,211,52,0.1);border:1px solid rgba(252,211,52,0.3);border-radius:var(--radius);text-align:center;">
-        <div style="font-size:32px;font-weight:bold;color:#fcd34d;"><%= nonPayers.length %></div>
-        <div style="font-size:0.85rem;color:var(--gray-400);margin-top:4px;">⏳ In Free Trial</div>
-      </div>
-    </div>
-
-    <!-- ⚠️ SUSPICIOUS REPEATERS - Free Trial Abusers -->
-    <% if (suspiciousDevices && suspiciousDevices.length > 0) { %>
-    <div class="card" style="background:rgba(255,107,107,0.1);border:2px solid rgba(255,107,107,0.4);margin-bottom:24px;padding:20px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <div style="font-size:32px;">⚠️</div>
-        <div>
-          <h3 style="margin:0;color:#ff6b6b;">Suspicious Activity Detected!</h3>
-          <p style="margin:4px 0 0 0;font-size:0.85rem;color:var(--gray-400);">Free trial repeaters trying to abuse the system</p>
-        </div>
-      </div>
-
-      <div style="overflow-x:auto;">
-        <table style="width:100%;font-size:0.85rem;">
-          <thead>
-            <tr style="border-bottom:2px solid rgba(255,107,107,0.3);">
-              <th style="text-align:left;padding:10px 0;color:#ff6b6b;font-weight:700;">Device MAC</th>
-              <th style="text-align:center;padding:10px 0;color:#ff6b6b;font-weight:700;">Reconnections</th>
-              <th style="text-align:center;padding:10px 0;color:#ff6b6b;font-weight:700;">Last Seen</th>
-              <th style="text-align:center;padding:10px 0;color:#ff6b6b;font-weight:700;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% suspiciousDevices.forEach(dev => {
-              const lastSeen = new Date(dev.last_connected).toLocaleTimeString('en-PH');
-              const macShort = dev.mac.substring(0, 12);
-            %>
-            <tr style="border-bottom:1px solid rgba(255,107,107,0.2);background:rgba(255,107,107,0.05);">
-              <td style="padding:12px 0;font-family:var(--mono);font-size:0.75rem;color:#ff6b6b;font-weight:700;">
-                <span title="<%= dev.mac %>"><%= macShort %>...</span>
-              </td>
-              <td style="padding:12px 0;text-align:center;color:#ff6b6b;font-weight:700;font-size:18px;">
-                <%= dev.connection_count %>x
-              </td>
-              <td style="padding:12px 0;text-align:center;color:var(--gray-400);font-size:0.8rem;">
-                <%= lastSeen %>
-              </td>
-              <td style="padding:12px 0;text-align:center;">
-                <button 
-                  class="btn btn-danger" 
-                  style="padding:6px 12px;font-size:0.8rem;font-weight:700;"
-                  onclick="blockRepeater('<%= dev.mac %>', '<%= macShort %>', this)"
-                >
-                  🚫 BLOCK NOW
-                </button>
-              </td>
-            </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="margin-top:16px;padding:12px;background:rgba(255,107,107,0.1);border-radius:6px;font-size:0.8rem;color:var(--gray-400);">
-        <strong>ℹ️ Info:</strong> These devices reconnected 3+ times in the last hour. They're likely abusing the free trial. Click "BLOCK NOW" to prevent them from using your WiFi.
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Active Users & Non-Payers -->
-    <div class="grid-2" style="margin-bottom:24px;">
-
-      <!-- Active Paid Users -->
-      <div class="card" style="background:rgba(255,255,255,0.03);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3>✅ Connected & Paid</h3>
-          <span class="badge" style="background:#4ade80;"><%= activeUsers.length %> users</span>
-        </div>
-        <% if (activeUsers.length === 0) { %>
-          <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">No active users</p>
-        <% } else { %>
-          <div style="overflow-x:auto;">
-            <table style="width:100%;font-size:0.85rem;">
-              <thead>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                  <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Code</th>
-                  <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Plan</th>
-                  <th style="text-align:right;padding:8px 0;color:var(--gray-400);">Time Left</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% activeUsers.slice(0, 10).forEach(u => {
-                  const mins = Math.floor((u.expires_at - Date.now()) / 60000);
-                  const hrs = Math.floor(mins / 60);
-                  const timeStr = hrs > 0 ? hrs + 'h ' + (mins % 60) + 'm' : mins + 'm';
-                %>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:8px 0;color:#667eea;font-weight:600;"><%= u.code %></td>
-                  <td style="padding:8px 0;"><%= u.plan %></td>
-                  <td style="padding:8px 0;text-align:right;color:<%= mins < 5 ? '#ff6b6b' : '#4ade80' %>;font-weight:600;"><%= timeStr %></td>
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        <% } %>
-      </div>
-
-      <!-- Free Trial (Non-Payers) with Block Button -->
-      <div class="card" style="background:rgba(255,255,255,0.03);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3>⏳ Free Trial (Unpaid)</h3>
-          <span class="badge" style="background:#fcd34d;color:#000;"><%= nonPayers.length %> users</span>
-        </div>
-        <% if (nonPayers.length === 0) { %>
-          <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">Everyone paid! 🎉</p>
-        <% } else { %>
-          <div style="overflow-x:auto;">
-            <table style="width:100%;font-size:0.85rem;">
-              <thead>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                  <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Device MAC</th>
-                  <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Time Used</th>
-                  <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Status</th>
-                  <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% nonPayers.forEach(np => {
-                  const timeLeft = 5 - np.minutes_connected;
-                  const isExpired = timeLeft <= 0;
-                  const macShort = np.mac.substring(0, 12);
-                %>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:var(--gray-400);">
-                    <span title="<%= np.mac %>"><%= macShort %>...</span>
-                  </td>
-                  <td style="padding:8px 0;text-align:center;color:var(--gray-400);">
-                    <%= np.minutes_connected %>m / 5m
-                  </td>
-                  <td style="padding:8px 0;text-align:center;">
-                    <% if (isExpired) { %>
-                      <span style="color:#ff6b6b;font-weight:600;background:rgba(255,107,107,0.1);padding:4px 8px;border-radius:4px;">❌ EXPIRED</span>
-                    <% } else { %>
-                      <span style="color:#fcd34d;font-weight:600;background:rgba(252,211,52,0.1);padding:4px 8px;border-radius:4px;">⏳ <%= timeLeft %>m</span>
-                    <% } %>
-                  </td>
-                  <td style="padding:8px 0;text-align:center;">
-                    <% if (isExpired) { %>
-                      <button 
-                        class="btn btn-danger" 
-                        style="padding:4px 8px;font-size:0.75rem;"
-                        onclick="blockDevice('<%= np.mac %>', this)"
-                      >
-                        🚫 Block
-                      </button>
-                    <% } %>
-                  </td>
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        <% } %>
-      </div>
-    </div>
-
-    <!-- Blocked Devices List -->
+    <!-- Generate Vouchers -->
     <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
-      <h3 style="margin-bottom:16px;">🚫 Blocked Devices</h3>
-      <div id="blockedList" style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">Loading...</div>
+      <h3 style="margin-bottom:16px;">🎫 Generate Vouchers</h3>
+      <form method="POST" action="/admin/vouchers/generate" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <div style="flex:1;min-width:180px;">
+          <label style="display:block;font-size:0.75rem;color:var(--gray-400);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Pricing Tier</label>
+          <select name="tierId" class="form-input" style="padding:10px 12px;font-size:0.9rem;" required>
+            <option value="">Select a plan...</option>
+            <% if (typeof pricingTiers !== 'undefined') { pricingTiers.forEach(tier => { %>
+              <option value="<%= tier.id %>"><%= tier.name %> (₱<%= tier.price %> / <%= tier.duration_minutes %> min)</option>
+            <% }) } %>
+          </select>
+        </div>
+        <div style="width:100px;">
+          <label style="display:block;font-size:0.75rem;color:var(--gray-400);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Count</label>
+          <input type="number" name="count" class="form-input" style="padding:10px 12px;font-size:0.9rem;" value="20" min="1" max="100" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding:10px 24px;">Generate</button>
+      </form>
     </div>
 
-    <!-- Sales by Plan -->
+    <!-- Active Sessions -->
     <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
-      <h3 style="margin-bottom:16px;">💰 Sales This Week</h3>
-      <p style="font-size:0.8rem;color:var(--gray-400);margin-bottom:12px;">
-        ₱<%= sales.weekSales.total %> from <%= sales.weekSales.count %> sessions
-      </p>
-      <% if (sales.byPlan && sales.byPlan.length > 0) { %>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <% sales.byPlan.forEach(p => { %>
-          <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(255,255,255,0.02);border-radius:6px;">
-            <span style="font-size:0.9rem;"><%= p.plan %></span>
-            <span style="font-size:0.9rem;color:#667eea;font-family:var(--mono);">₱<%= p.revenue %> (<%= p.count %>x)</span>
-          </div>
-          <% }) %>
-        </div>
+      <h3 style="margin-bottom:16px;">👥 Active Sessions</h3>
+      <% if (typeof activeSessions === 'undefined' || activeSessions.length === 0) { %>
+        <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">No active sessions right now</p>
       <% } else { %>
-        <p style="color:var(--gray-400);font-size:0.9rem;">No sales data yet</p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;font-size:0.85rem;">
+            <thead>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Voucher</th>
+                <th style="text-align:left;padding:8px 0;color:var(--gray-400);">MAC Address</th>
+                <th style="text-align:left;padding:8px 0;color:var(--gray-400);">IP</th>
+                <th style="text-align:right;padding:8px 0;color:var(--gray-400);">Expires</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% activeSessions.forEach(s => {
+                const expires = s.vouchers ? new Date(s.vouchers.expires_at).toLocaleTimeString('en-PH') : 'N/A';
+              %>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:8px 0;color:#667eea;font-weight:600;font-family:var(--mono);font-size:0.8rem;"><%= s.voucher_token %></td>
+                <td style="padding:8px 0;font-family:var(--mono);font-size:0.8rem;color:var(--gray-400);"><%= s.mac_address %></td>
+                <td style="padding:8px 0;font-family:var(--mono);font-size:0.8rem;color:var(--gray-400);"><%= s.ip_address %></td>
+                <td style="padding:8px 0;text-align:right;color:#4ade80;"><%= expires %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
       <% } %>
     </div>
 
-    <!-- Notifications -->
-    <% if (notifications && notifications.length > 0) { %>
-    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
-      <h3 style="margin-bottom:16px;">🔔 Recent Notifications</h3>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <% notifications.slice(0, 5).forEach(n => { %>
-        <div style="padding:10px;background:rgba(255,255,255,0.02);border-left:3px solid #667eea;border-radius:4px;">
-          <div style="font-size:0.85rem;color:var(--white);">
-            <% if (n.type === 'sale') { %>
-              💰 <%= n.message %>
-            <% } else { %>
-              🚨 <%= n.message %>
-            <% } %>
-          </div>
-          <div style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;">
-            <%= new Date(n.created_at).toLocaleTimeString('en-PH') %>
-          </div>
-        </div>
-        <% }) %>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Refunds -->
-    <% if (refunds && refunds.length > 0) { %>
-    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
-      <h3 style="margin-bottom:16px;">💸 Recent Refunds</h3>
-      <div style="overflow-x:auto;">
-        <table style="width:100%;font-size:0.85rem;">
-          <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Code</th>
-              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Plan</th>
-              <th style="text-align:right;padding:8px 0;color:var(--gray-400);">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% refunds.slice(0, 8).forEach(r => { %>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-              <td style="padding:8px 0;color:#667eea;"><%= r.code %></td>
-              <td style="padding:8px 0;"><%= r.plan %></td>
-              <td style="padding:8px 0;text-align:right;color:#ff6b6b;font-weight:600;">-₱<%= r.price %></td>
-            </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Backups -->
-    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3>💾 Database Backups</h3>
-        <button class="btn btn-outline btn-sm" onclick="createBackup()">🔄 Backup Now</button>
-      </div>
-      <div id="backupMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
-      <% if (backups && backups.length > 0) { %>
-        <div style="max-height:200px;overflow-y:auto;">
-          <% backups.forEach(b => {
-            const date = new Date(b.created_at).toLocaleString('en-PH');
-            const sizeMB = (b.size / 1024 / 1024).toFixed(2);
-          %>
-          <div style="padding:8px;background:rgba(255,255,255,0.02);border-radius:6px;margin-bottom:8px;font-size:0.85rem;">
-            <div style="font-family:var(--mono);color:#667eea;margin-bottom:2px;"><%= b.filename %></div>
-            <div style="color:var(--gray-400);font-size:0.75rem;"><%= date %> · <%= sizeMB %>MB</div>
-          </div>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <p style="color:var(--gray-400);font-size:0.9rem;">No backups yet. Click "Backup Now" to create one.</p>
-      <% } %>
-    </div>
-
-    <!-- WiFi Batches -->
-    <% if (wifiBatches && wifiBatches.length > 0) { %>
+    <!-- Recent Logs -->
     <div class="card" style="background:rgba(255,255,255,0.03);">
-      <h3 style="margin-bottom:16px;">📁 WiFi Batches</h3>
-      <div style="overflow-x:auto;">
-        <table style="width:100%;font-size:0.85rem;">
-          <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Batch ID</th>
-              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">WiFi Password</th>
-              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Plan</th>
-              <th style="text-align:center;padding:8px 0;color:var(--gray-400);">Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% wifiBatches.forEach(b => { %>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-              <td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:var(--gray-400);"><%= b.batch_id.substring(0, 15) %>...</td>
-              <td style="padding:8px 0;font-family:var(--mono);font-weight:600;"><%= b.wifi_password %></td>
-              <td style="padding:8px 0;"><%= b.plan %></td>
-              <td style="padding:8px 0;text-align:center;color:<%= b.active ? '#4ade80' : '#999' %>;">
-                <%= b.active ? '✓' : '✗' %>
-              </td>
-            </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+      <h3 style="margin-bottom:16px;">📋 Recent Activity</h3>
+      <% if (typeof logs === 'undefined' || logs.length === 0) { %>
+        <p style="color:var(--gray-400);font-size:0.9rem;text-align:center;padding:20px 0;">No activity yet</p>
+      <% } else { %>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <% logs.forEach(log => { %>
+          <div style="padding:10px;background:rgba(255,255,255,0.02);border-left:3px solid #667eea;border-radius:4px;">
+            <div style="font-size:0.85rem;color:var(--white);"><%= log.description %></div>
+            <div style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;">
+              <%= new Date(log.created_at).toLocaleString('en-PH') %>
+              <% if (log.mac_address) { %> · <span style="font-family:var(--mono);"><%= log.mac_address %></span><% } %>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      <% } %>
     </div>
-    <% } %>
 
   </div>
 </main>
 
-<!-- Password Modal -->
-<div id="pwModal" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.85);z-index:200;align-items:center;justify-content:center;padding:20px;">
-  <div class="card" style="max-width:360px;width:100%;">
-    <h3 style="margin-bottom:16px;">🔑 Change Password</h3>
-    <div id="pwMsg" style="margin-bottom:12px;"></div>
-    <div style="margin-bottom:12px;">
-      <input type="password" id="pwCurrent" class="form-input" placeholder="Current password">
-    </div>
-    <div style="margin-bottom:12px;">
-      <input type="password" id="pwNew" class="form-input" placeholder="New password">
-    </div>
-    <div style="margin-bottom:16px;">
-      <input type="password" id="pwConfirm" class="form-input" placeholder="Confirm password">
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button class="btn btn-primary" onclick="submitPassword()" style="flex:1;">Save</button>
-      <button class="btn btn-outline" onclick="hidePasswordModal()" style="flex:1;">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <script>
-  function showPasswordModal() {
-    document.getElementById('pwModal').style.display = 'flex';
+async function toggleSetting(key) {
+  const btn = document.getElementById('sleepBtn');
+  const isOn = btn.textContent.includes('Wake Up');
+  btn.disabled = true;
+  btn.textContent = '⏳ Updating...';
+  try {
+    await fetch('/admin/settings/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `key=${key}&value=${!isOn}`
+    });
+    location.reload();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = isOn ? '☀️ Wake Up' : '😴 Sleep Mode';
   }
-
-  function hidePasswordModal() {
-    document.getElementById('pwModal').style.display = 'none';
-    document.getElementById('pwMsg').innerHTML = '';
-    ['pwCurrent', 'pwNew', 'pwConfirm'].forEach(id => document.getElementById(id).value = '');
-  }
-
-  async function submitPassword() {
-    const current = document.getElementById('pwCurrent').value;
-    const newpass = document.getElementById('pwNew').value;
-    const confirm = document.getElementById('pwConfirm').value;
-    const msg = document.getElementById('pwMsg');
-
-    try {
-      const res = await fetch('/admin/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `current=${encodeURIComponent(current)}&newpass=${encodeURIComponent(newpass)}&confirm=${encodeURIComponent(confirm)}`
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        msg.innerHTML = '<div style="color:#4ade80;">✅ Password changed!</div>';
-        setTimeout(hidePasswordModal, 1500);
-      } else {
-        msg.innerHTML = `<div style="color:#ff6b6b;">❌ ${data.error}</div>`;
-      }
-    } catch(e) {
-      msg.innerHTML = '<div style="color:#ff6b6b;">❌ Error</div>';
-    }
-  }
-
-  async function toggleSleep() {
-    const btn = document.getElementById('sleepBtn');
-    btn.disabled = true;
-    const isOn = btn.textContent.includes('Wake Up');
-    btn.textContent = '⏳ Updating...';
-
-    try {
-      await fetch('/admin/sleep-mode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `enabled=${!isOn}`
-      });
-      location.reload();
-    } catch(e) {
-      btn.disabled = false;
-      btn.textContent = isOn ? '☀️ Wake Up' : '😴 Go to Sleep';
-    }
-  }
-
-  async function createBackup() {
-    const msg = document.getElementById('backupMsg');
-    msg.innerHTML = '<div style="color:var(--gray-400);">⏳ Creating backup...</div>';
-
-    try {
-      const res = await fetch('/api/admin/backup', {
-        method: 'POST'
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        msg.innerHTML = `<div style="color:#4ade80;">✅ Backup created: ${data.filename}</div>`;
-        setTimeout(() => location.reload(), 2000);
-      } else {
-        msg.innerHTML = `<div style="color:#ff6b6b;">❌ ${data.error}</div>`;
-      }
-    } catch(e) {
-      msg.innerHTML = `<div style="color:#ff6b6b;">❌ Error</div>`;
-    }
-  }
-
-  // Load blocked devices on page load
-  async function loadBlockedDevices() {
-    try {
-      const res = await fetch('/api/admin/blocked-devices');
-      const data = await res.json();
-      
-      const list = document.getElementById('blockedList');
-      
-      if (!data.success || !data.blocked || data.blocked.length === 0) {
-        list.innerHTML = '<p style="color:var(--gray-400);">No blocked devices</p>';
-        return;
-      }
-      
-      let html = '<div style="overflow-x:auto;"><table style="width:100%;font-size:0.85rem;">';
-      html += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">';
-      html += '<th style="text-align:left;padding:8px 0;color:var(--gray-400);">Device MAC</th>';
-      html += '<th style="text-align:center;padding:8px 0;color:var(--gray-400);">Blocked Since</th>';
-      html += '<th style="text-align:center;padding:8px 0;color:var(--gray-400);">Action</th>';
-      html += '</tr></thead><tbody>';
-      
-      data.blocked.forEach(b => {
-        const date = new Date(b.connected_at).toLocaleTimeString('en-PH');
-        html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">`;
-        html += `<td style="padding:8px 0;font-family:var(--mono);font-size:0.75rem;color:#ff6b6b;">${b.mac.substring(0, 12)}...</td>`;
-        html += `<td style="padding:8px 0;text-align:center;color:var(--gray-400);font-size:0.8rem;">${date}</td>`;
-        html += `<td style="padding:8px 0;text-align:center;"><button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem;" onclick="unblockDevice('${b.mac}', this)">🔓 Unblock</button></td>`;
-        html += `</tr>`;
-      });
-      
-      html += '</tbody></table></div>';
-      list.innerHTML = html;
-    } catch(e) {
-      console.error('Error loading blocked devices:', e);
-    }
-  }
-
-  async function blockDevice(mac, btn) {
-    if (!confirm(`Block ${mac}?`)) return;
-    
-    btn.disabled = true;
-    btn.textContent = '⏳ Blocking...';
-    
-    try {
-      const res = await fetch('/api/admin/block-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `mac=${encodeURIComponent(mac)}`
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        alert('✅ Device blocked! Reload page to see in blocked list.');
-        location.reload();
-      } else {
-        alert('❌ Error: ' + data.error);
-        btn.disabled = false;
-        btn.textContent = '🚫 Block';
-      }
-    } catch(e) {
-      alert('❌ Error: ' + e.message);
-      btn.disabled = false;
-      btn.textContent = '🚫 Block';
-    }
-  }
-
-  async function unblockDevice(mac, btn) {
-    if (!confirm(`Unblock ${mac}?`)) return;
-    
-    btn.disabled = true;
-    btn.textContent = '⏳ Unblocking...';
-    
-    try {
-      const res = await fetch('/api/admin/unblock-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `mac=${encodeURIComponent(mac)}`
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        alert('✅ Device unblocked!');
-        location.reload();
-      } else {
-        alert('❌ Error: ' + data.error);
-        btn.disabled = false;
-        btn.textContent = '🔓 Unblock';
-      }
-    } catch(e) {
-      alert('❌ Error: ' + e.message);
-      btn.disabled = false;
-      btn.textContent = '🔓 Unblock';
-    }
-  }
-
-  async function blockRepeater(mac, macShort, btn) {
-    if (!confirm(`🚫 Block repeater ${macShort}...?\n\nThey will lose internet access.`)) return;
-    
-    btn.disabled = true;
-    btn.textContent = '⏳ BLOCKING...';
-    btn.style.opacity = '0.6';
-    
-    try {
-      const res = await fetch('/api/admin/block-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `mac=${encodeURIComponent(mac)}`
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        alert(`✅ Repeater blocked!\n\n${macShort}... is now blocked from your WiFi.`);
-        location.reload();
-      } else {
-        alert(`❌ Error: ${data.error}`);
-        btn.disabled = false;
-        btn.textContent = '🚫 BLOCK NOW';
-        btn.style.opacity = '1';
-      }
-    } catch(e) {
-      alert(`❌ Error: ${e.message}`);
-      btn.disabled = false;
-      btn.textContent = '🚫 BLOCK NOW';
-      btn.style.opacity = '1';
-    }
-  }
-
-  // Load blocked devices when page loads
-  window.addEventListener('load', loadBlockedDevices);
+}
 </script>
 
 </body>
