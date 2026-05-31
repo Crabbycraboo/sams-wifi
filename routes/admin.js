@@ -113,7 +113,7 @@ router.post('/vouchers/generate', requireAdminAuth, async (req, res) => {
     res.render('admin/vouchers', {
       title: `Vouchers — ${tier.name}`,
       vouchers: printVouchers,
-      tier
+      tier,
       counts: { unredeemed: 0, active: 0, expired: 0 }
     });
 
