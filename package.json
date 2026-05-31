@@ -1,24 +1,13 @@
 {
   "name": "sams-wifi",
   "version": "3.0.0",
-  "description": "Sam's WiFi - Piso WiFi Voucher Management System",
   "main": "server.js",
- "scripts": {
-  "start": "node sams-wifi-v3/server.js",
-  "dev": "nodemon sams-wifi-v3/server.js"
-},
+  "scripts": { "start": "node server.js" },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "dotenv": "^17.4.2",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "sql.js": "^1.14.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "@supabase/supabase-js": "^2.0.0"
   }
 }
