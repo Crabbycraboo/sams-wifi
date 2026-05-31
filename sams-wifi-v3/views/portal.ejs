@@ -211,72 +211,72 @@
 
   <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
 
-  <script>
+ <script>
+    // Pull real millisecond values calculated safely by your Supabase schema configuration
     const expiresAt  = <%= voucher.expires_at %>;
-    const startedAt  = <%= voucher.started_at || Date.now() %>;
-    const totalMs    = expiresAt - startedAt;
-    const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65
+    const totalMs    = <%= msRemaining %>; 
+    const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65 [cite: 73]
 
-    const ring       = document.getElementById('timerRing');
-    const timerText  = document.getElementById('timerText');
-    const warningBar = document.getElementById('warningBar');
-    const expiryTime = document.getElementById('expiryTime');
+    const ring       = document.getElementById('timerRing'); [cite: 74]
+    const timerText  = document.getElementById('timerText'); [cite: 74]
+    const warningBar = document.getElementById('warningBar'); [cite: 74]
+    const expiryTime = document.getElementById('expiryTime'); [cite: 75]
 
-    // Show expiry time
-    expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
-
-    ring.style.strokeDasharray  = CIRCUMFERENCE;
-    ring.style.strokeDashoffset = 0;
-
-    let sessionCheckInterval;
+    // Render localized time calculations
+    expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }); [cite: 76]
+    ring.style.strokeDasharray  = CIRCUMFERENCE; [cite: 76]
+    ring.style.strokeDashoffset = 0; [cite: 76]
 
     function updateTimer() {
       const now = Date.now();
-      const ms  = expiresAt - now;
+      const ms  = expiresAt - now; [cite: 77]
 
-      if (ms <= 0) {
-        timerText.textContent = '00:00';
-        timerText.style.color = 'var(--danger)';
-        ring.style.strokeDashoffset = CIRCUMFERENCE;
-        ring.style.stroke = 'var(--danger)';
-        window.location.href = '/expired';
-        return;
+      if (ms <= 0) { [cite: 78]
+        timerText.textContent = '00:00'; [cite: 78]
+        timerText.style.color = 'var(--danger)'; [cite: 78]
+        ring.style.strokeDashoffset = CIRCUMFERENCE; [cite: 79]
+        ring.style.stroke = 'var(--danger)'; [cite: 79]
+        window.location.href = '/expired'; [cite: 79]
+        return; [cite: 79]
       }
 
-      const mins = Math.floor(ms / 60000);
-      const secs = Math.floor((ms % 60000) / 1000);
-      timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      const mins = Math.floor(ms / 60000); [cite: 80]
+      const secs = Math.floor((ms % 60000) / 1000); [cite: 80]
+      timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0'); [cite: 80]
 
-      // Progress ring
-      const progress = ms / totalMs;
-      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+      // Progress bar scaling
+      const progress = ms / totalMs; [cite: 81]
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress); [cite: 81]
 
-      if (ms < 60000) {
-        timerText.style.color = 'var(--danger)';
-        ring.style.stroke = 'var(--danger)';
-      } else if (ms < 2 * 60000) {
-        timerText.style.color = '#fcd34d';
-        ring.style.stroke = '#fcd34d';
-        warningBar.style.display = 'block';
+      // Dynamic color shifts
+      if (ms < 60000) { [cite: 82]
+        timerText.style.color = 'var(--danger)'; [cite: 82]
+        ring.style.stroke = 'var(--danger)'; [cite: 82]
+      } else if (ms < 2 * 60000) { [cite: 83]
+        timerText.style.color = '#fcd34d'; [cite: 83]
+        ring.style.stroke = '#fcd34d'; [cite: 83]
+        warningBar.style.display = 'block'; [cite: 83]
       }
     }
 
-    // Poll server every 15s to verify session is still valid
+    // Modernized Polling Engine: Automatically checks the live gateway status route!
     async function checkSession() {
       try {
-        const res  = await fetch('/api/session-status');
-        const data = await res.json();
-        if (data.status === 'expired' || data.status === 'no_session' || data.status === 'device_mismatch') {
+        // Querying our clean gateway check endpoint using a safe mock format
+        const res = await fetch(`/api/gateway/check?mac=<%= voucher.mac_address || "00:00:00:00:00:00" %>`);
+        const statusText = await res.text();
+        
+        // If the system returns anything other than allow, bounce them out
+        if (statusText !== 'allow') {
           window.location.href = '/expired';
         }
-      } catch(e) { /* network hiccup — keep running */ }
+      } catch(e) { /* network hiccup — suppress crash and keep running */ }
     }
 
-    setInterval(updateTimer, 500);
-    updateTimer();
+    setInterval(updateTimer, 500); [cite: 86]
+    updateTimer(); [cite: 86]
 
-    sessionCheckInterval = setInterval(checkSession, 15000);
+    // Sync with cloud restrictions every 15 seconds
+    setInterval(checkSession, 15000);
     checkSession();
   </script>
-</body>
-</html>
