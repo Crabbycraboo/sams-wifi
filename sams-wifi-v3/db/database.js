@@ -90,19 +90,11 @@ async function initDb() {
 
   db.run(`CREATE TABLE IF NOT EXISTS connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mac TEXT NOT NULL UNIQUE,
+    mac TEXT NOT NULL,
     connected_at INTEGER NOT NULL,
     has_voucher INTEGER DEFAULT 0,
     blocked INTEGER DEFAULT 0
   )`);
-
-  // Separate table to count reconnection events (for repeater detection)
-  db.run(`CREATE TABLE IF NOT EXISTS connection_events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mac TEXT NOT NULL,
-    event_at INTEGER NOT NULL
-  )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_conn_events ON connection_events(mac, event_at)`);
 
   db.run(`CREATE TABLE IF NOT EXISTS backups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -380,17 +372,10 @@ function markNotificationRead(id) {
 }
 
 function trackConnection(mac) {
-  const now = Date.now();
-  const existing = queryOne(`SELECT id, blocked FROM connections WHERE mac=?`, [mac]);
+  const existing = queryOne(`SELECT id FROM connections WHERE mac=?`, [mac]);
   if (!existing) {
-    // New device — insert fresh record
-    run(`INSERT INTO connections (mac, connected_at, has_voucher, blocked) VALUES (?, ?, 0, 0)`, [mac, now]);
-  } else {
-    // Returning device — reset trial timer but keep blocked status
-    run(`UPDATE connections SET connected_at=?, has_voucher=0 WHERE mac=? AND blocked=0`, [now, mac]);
+    run(`INSERT INTO connections (mac, connected_at, has_voucher) VALUES (?, ?, 0)`, [mac, Date.now()]);
   }
-  // Always log the connection event (used for repeater detection)
-  run(`INSERT INTO connection_events (mac, event_at) VALUES (?, ?)`, [mac, now]);
 }
 
 function markVoucherPaid(mac) {
@@ -469,12 +454,14 @@ function scheduleAutoCleanup() {
   console.log(`[CLEANUP] Scheduled daily cleanup`);
 }
 
+// ─── REPEATER DETECTION ────────────────────────────────────────────────────
+// Detect devices that reconnect 3+ times in the last hour (free trial abusers)
 function getRepeaterDevices() {
   try {
     return query(`
-      SELECT mac, COUNT(*) as connection_count, MAX(event_at) as last_connected
-      FROM connection_events
-      WHERE event_at > ?
+      SELECT mac, COUNT(*) as connection_count, MAX(connected_at) as last_connected
+      FROM connections
+      WHERE connected_at > ?
       GROUP BY mac
       HAVING COUNT(*) >= 3
       ORDER BY connection_count DESC
@@ -498,6 +485,6 @@ module.exports = {
   refundVoucher, getRefundHistory,
   createBackup, getBackups,
   cleanupExpiredVouchers,
-  getRepeaterDevices,
+  getRepeaterDevices,  // ← ADD THIS EXPORT
   queryOne, query, run,
 };
