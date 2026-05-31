@@ -24,10 +24,10 @@ app.use('/', require('./routes/customer'));
 app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 
-// Error handler
+// Replace your existing error handler at the end of server.js with this:
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
+  console.error("DEBUG ERROR:", err); // This will show up in your Vercel logs
+  res.status(500).send(`Error: ${err.message}`); 
 });
 
 module.exports = app; // CRITICAL: This allows Vercel to run your app
