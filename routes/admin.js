@@ -54,7 +54,6 @@ router.get('/dashboard', requireAdminAuth, async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(15);
 
-    // Count vouchers by status
     const { data: voucherCounts } = await supabase
       .from('vouchers')
       .select('status');
@@ -81,12 +80,60 @@ router.get('/dashboard', requireAdminAuth, async (req, res) => {
   }
 });
 
-// 4. GENERATE VOUCHERS
+// 4. VOUCHERS PAGE (GET)
+router.get('/vouchers', requireAdminAuth, async (req, res) => {
+  try {
+    const currentStatus = req.query.status || 'all';
+
+    let query = supabase
+      .from('vouchers')
+      .select('token, status, duration_minutes, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (currentStatus !== 'all') {
+      query = query.eq('status', currentStatus);
+    }
+
+    const { data: vouchers } = await query;
+
+    const { data: allVouchers } = await supabase.from('vouchers').select('status');
+    const counts = { all: 0, unredeemed: 0, active: 0, expired: 0, unused: 0 };
+    allVouchers?.forEach(v => {
+      counts.all++;
+      if (counts[v.status] !== undefined) counts[v.status]++;
+    });
+    counts.unused = counts.unredeemed;
+
+    const { data: tiers } = await supabase.from('pricing_tiers').select('*').order('price', { ascending: true });
+
+    const mapped = (vouchers || []).map(v => ({
+      code: v.token,
+      plan: `${v.duration_minutes} min`,
+      status: v.status === 'unredeemed' ? 'unused' : v.status,
+      created_at: v.created_at
+    }));
+
+    res.render('admin/vouchers', {
+      title: "Vouchers — Sam's WiFi",
+      vouchers: mapped,
+      counts,
+      currentStatus,
+      pricingTiers: tiers || []
+    });
+
+  } catch (err) {
+    console.error('Vouchers page error:', err.message);
+    res.redirect('/admin/dashboard?error=' + encodeURIComponent(err.message));
+  }
+});
+
+// 5. GENERATE VOUCHERS (POST — returns JSON for fetch())
 router.post('/vouchers/generate', requireAdminAuth, async (req, res) => {
   const { tierId, count } = req.body;
 
   if (!tierId || !count) {
-    return res.redirect('/admin/dashboard?error=Missing tier or count.');
+    return res.json({ success: false, error: 'Missing tier or count.' });
   }
 
   try {
@@ -97,33 +144,28 @@ router.post('/vouchers/generate', requireAdminAuth, async (req, res) => {
       .single();
 
     if (tierError || !tier) {
-      return res.redirect('/admin/dashboard?error=Pricing tier not found.');
+      return res.json({ success: false, error: 'Pricing tier not found.' });
     }
 
-    const countInt = Math.min(parseInt(count) || 20, 100); // cap at 100
+    const countInt = Math.min(parseInt(count) || 20, 100);
     const generated = await generateVoucherBatch(tier.id, tier.duration_minutes, countInt);
 
-    const printVouchers = generated.map(v => ({
-      token: v.token,
-      duration: tier.duration_minutes,
-      name: tier.name,
-      price: tier.price
-    }));
+    const codes = generated.map(v => v.token);
 
-    res.render('admin/vouchers', {
-      title: `Vouchers — ${tier.name}`,
-      vouchers: printVouchers,
-      tier,
-      counts: { unredeemed: 0, active: 0, expired: 0 }
+    res.json({
+      success: true,
+      count: codes.length,
+      codes,
+      tier: { name: tier.name, price: tier.price, duration: tier.duration_minutes }
     });
 
   } catch (err) {
     console.error('Voucher generation error:', err.message);
-    res.redirect('/admin/dashboard?error=' + encodeURIComponent(err.message));
+    res.json({ success: false, error: err.message });
   }
 });
 
-// 5. TOGGLE SETTINGS
+// 6. TOGGLE SETTINGS
 router.post('/settings/toggle', requireAdminAuth, async (req, res) => {
   const { key, value } = req.body;
 
@@ -147,7 +189,7 @@ router.post('/settings/toggle', requireAdminAuth, async (req, res) => {
   }
 });
 
-// 6. LOGOUT
+// 7. LOGOUT
 router.get('/logout', (req, res) => {
   req.session.destroy();
   res.redirect('/admin/login');
