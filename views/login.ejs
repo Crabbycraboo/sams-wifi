@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: var(--blue-900); [cite: 1]
+      min-height: 100vh; [cite: 2]
+      display: flex; [cite: 2]
+      flex-direction: column; [cite: 2]
+      align-items: center; [cite: 2]
+      justify-content: center; [cite: 2]
+      padding: 20px; [cite: 2]
+    }
+    .login-card {
+      width: 100%; [cite: 3]
+      max-width: 480px; [cite: 3]
+      background: rgba(255,255,255,0.04); [cite: 3]
+      border: 1px solid rgba(255,255,255,0.08); [cite: 4]
+      border-radius: var(--radius); [cite: 4]
+      padding: 40px 32px; [cite: 4]
+      backdrop-filter: blur(20px); [cite: 4]
+    }
+    .brand {
+      text-align: center; [cite: 5]
+      margin-bottom: 32px; [cite: 5]
+    }
+    .brand-icon { font-size: 2.5rem; margin-bottom: 8px; } [cite: 6]
+    .brand h1 { font-size: 2rem; margin: 0; } [cite: 6, 7]
+    .brand h1 span { color: var(--accent); } [cite: 7]
+    .brand-sub { font-size: 0.85rem; color: var(--gray-400); margin-top: 4px; } [cite: 8]
+    .plans-label {
+      font-size: 0.75rem; [cite: 8]
+      font-weight: 600; [cite: 9]
+      letter-spacing: 1px; [cite: 9]
+      text-transform: uppercase; [cite: 9]
+      color: var(--gray-400); [cite: 9]
+      margin-bottom: 12px; [cite: 9]
+    }
+    .plans-grid {
+      display: grid; [cite: 9]
+      grid-template-columns: repeat(3, 1fr); [cite: 10]
+      gap: 8px; [cite: 10]
+      margin-bottom: 24px; [cite: 10]
+    }
+    .plan-card {
+      background: rgba(255,255,255,0.04); [cite: 10]
+      border: 1.5px solid rgba(255,255,255,0.08); [cite: 11]
+      border-radius: var(--radius-sm); [cite: 11]
+      padding: 12px 8px; [cite: 11]
+      text-align: center; [cite: 11]
+      cursor: default; [cite: 11]
+    }
+    .plan-price {
+      font-size: 1.2rem; [cite: 12]
+      font-weight: 800; [cite: 12]
+      color: var(--accent); [cite: 12]
+      font-family: var(--mono); [cite: 12]
+    }
+    .plan-dur {
+      font-size: 0.7rem; [cite: 13]
+      color: var(--gray-400); [cite: 13]
+      margin-top: 2px; [cite: 13]
+    }
+    .form-label {
+      display: block; [cite: 14]
+      font-size: 0.75rem; [cite: 14]
+      font-weight: 600; [cite: 14]
+      letter-spacing: 1px; [cite: 14]
+      text-transform: uppercase; [cite: 15]
+      color: var(--gray-400); [cite: 15]
+      margin-bottom: 8px; [cite: 15]
+    }
+    .form-input {
+      width: 100%; [cite: 15]
+      padding: 14px 16px; [cite: 16]
+      background: rgba(255,255,255,0.06); [cite: 16]
+      border: 1.5px solid rgba(255,255,255,0.12); [cite: 16]
+      border-radius: var(--radius-sm); [cite: 16]
+      font-size: 1.1rem; [cite: 16]
+      font-family: var(--mono); [cite: 16]
+      color: var(--white); [cite: 16]
+      letter-spacing: 2px; [cite: 16]
+      text-transform: uppercase; [cite: 17]
+      box-sizing: border-box; [cite: 17]
+      transition: border-color 0.2s; [cite: 17]
+    }
+    .form-input:focus {
+      outline: none; [cite: 17]
+      border-color: var(--accent); [cite: 18]
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1); [cite: 18]
+    }
+    .form-input::placeholder { color: var(--gray-400); letter-spacing: 1px; } [cite: 18, 19]
+    .form-hint {
+      font-size: 0.75rem; [cite: 19]
+      color: var(--gray-400); [cite: 19]
+      margin-top: 6px; [cite: 19]
+    }
+    .btn-connect {
+      width: 100%; [cite: 20]
+      padding: 15px; [cite: 20]
+      background: linear-gradient(135deg, var(--accent), #0090b3); [cite: 20]
+      color: var(--blue-900); [cite: 21]
+      border: none; [cite: 21]
+      border-radius: var(--radius-sm); [cite: 21]
+      font-size: 1rem; [cite: 21]
+      font-weight: 700; [cite: 21]
+      cursor: pointer; [cite: 21]
+      margin-top: 20px; [cite: 21]
+      transition: all 0.2s; [cite: 21]
+      letter-spacing: 0.5px; [cite: 21]
+    }
+    .btn-connect:hover {
+      transform: translateY(-2px); [cite: 22]
+      box-shadow: 0 8px 24px rgba(0,212,255,0.3); [cite: 22]
+    }
+    .btn-trial {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      color: var(--accent);
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: all 0.2s;
+    }
+    .btn-trial:hover {
+      background: rgba(0,212,255,0.08);
+      box-shadow: 0 0 15px rgba(0,212,255,0.2);
+    }
+    .error-alert {
+      background: rgba(239,68,68,0.12); [cite: 23]
+      border: 1px solid rgba(239,68,68,0.3); [cite: 23]
+      color: #fca5a5; [cite: 23]
+      padding: 12px 14px; [cite: 24]
+      border-radius: var(--radius-sm); [cite: 24]
+      margin-bottom: 20px; [cite: 24]
+      font-size: 0.85rem; [cite: 24]
+      line-height: 1.5; [cite: 24]
+    }
+    .gcash-box {
+      margin-top: 24px; [cite: 25]
+      background: rgba(0,212,255,0.05); [cite: 25]
+      border: 1px solid rgba(0,212,255,0.15); [cite: 25]
+      border-radius: var(--radius-sm); [cite: 26]
+      padding: 18px; [cite: 26]
+      text-align: center; [cite: 26]
+    }
+    .gcash-label {
+      font-size: 0.75rem; [cite: 26]
+      color: var(--gray-400); [cite: 27]
+      text-transform: uppercase; [cite: 27]
+      letter-spacing: 1px; [cite: 27]
+      margin-bottom: 8px; [cite: 27]
+    }
+    .gcash-num {
+      font-size: 1.4rem; [cite: 27]
+      font-weight: 800; [cite: 28]
+      font-family: var(--mono); [cite: 28]
+      color: var(--accent); [cite: 28]
+      letter-spacing: 2px; [cite: 28]
+    }
+    .gcash-name {
+      font-size: 0.8rem; [cite: 28]
+      color: var(--gray-400); [cite: 29]
+      margin-top: 4px; [cite: 29]
+    }
+    .gcash-note {
+      font-size: 0.75rem; [cite: 29]
+      color: var(--gray-400); [cite: 29]
+      margin-top: 10px; [cite: 30]
+      line-height: 1.5; [cite: 30]
+    }
+    .sleep-banner {
+      background: rgba(251,191,36,0.1); [cite: 30]
+      border: 1px solid rgba(251,191,36,0.25); [cite: 31]
+      color: #fcd34d; [cite: 31]
+      padding: 10px 14px; [cite: 31]
+      border-radius: var(--radius-sm); [cite: 31]
+      font-size: 0.82rem; [cite: 31]
+      text-align: center; [cite: 31]
+      margin-bottom: 20px; [cite: 31]
+    }
+    .footer-note {
+      text-align: center; [cite: 32]
+      margin-top: 20px; [cite: 33]
+      font-size: 0.75rem; [cite: 33]
+      color: var(--gray-400); [cite: 33]
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-icon">📶</div>
+      <h1>Sam's <span>WiFi</span></h1>
+      <div class="brand-sub">Taytay, Rizal</div>
+    </div>
+
+    <% if (sleepMode) { %>
+      <div class="sleep-banner">
+        😴 Sleep Mode – Minimum plan is ₱5. [cite: 33]
+        Pay via GCash and message for your code. [cite: 34]
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="error-alert">⚠️ <%= error %></div>
+    <% } %>
+
+    <div class="plans-label">Available Plans</div>
+    <div class="plans-grid">
+      <% plans.forEach(plan => { %>
+        <div class="plan-card">
+          <div class="plan-price"><%= plan.name.split('–')[0].trim() %></div>
+          <div class="plan-dur"><%= plan.name.split('–')[1] ? plan.name.split('–')[1].trim() : plan.duration_minutes + ' Mins' %></div>
+        </div>
+      <% }) %>
+    </div>
+
+    <form method="POST" action="connect">
+      <input type="hidden" name="mac" value="<%= mac %>">
+
+      <div style="margin-bottom: 20px;">
+        <label class="form-label">Voucher Code</label>
+        <input
+          type="text"
+          name="code"
+          class="form-input"
+          placeholder="SAM-XXXX"
+          [cite_start]value="<%= code %>" [cite: 36]
+          maxlength="8"
+          required
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="characters"
+        >
+        <div class="form-hint">📋 Enter the code from your voucher slip</div>
+      </div>
+      <button type="submit" class="btn-connect">🔗 Kumonekta / Connect</button>
+    </form>
+
+    <% if (!sleepMode) { %>
+      <button id="trialBtn" class="btn-trial">🎁 Subukan ang Free 5-Mins Trial</button>
+    <% } %>
+   
+    <div class="gcash-box"> [cite: 37]
+      <div class="gcash-label">💳 Walang code? / No code?</div> [cite: 37, 38]
+      <div class="gcash-num"><%= gcash.number %></div> [cite: 38]
+      <div class="gcash-name"><%= gcash.name %></div> [cite: 38]
+      <div class="gcash-note">
+        Mag-GCash ng bayad at i-message ang ref number para sa inyong code.<br> [cite: 38]
+        <small>Send payment via GCash + message your ref # for your code.</small> [cite: 38]
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
+
+  <script>
+    document.getElementById('trialBtn')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const trialBtn = e.target;
+      trialBtn.innerText = "⏳ Pag-activate...";
+      trialBtn.disabled = true;
+
+      try {
+        // Pointing to relative API endpoint to fit monorepo structure safely
+        const res = await fetch('api/trial/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mac: "<%= mac %>" })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = data.redirect;
+        } else {
+          alert(data.message || 'Error occurred.');
+          trialBtn.innerText = "🎁 Subukan ang Free 5-Mins Trial";
+          trialBtn.disabled = false;
+        }
+      } catch (err) {
+        alert('Hindi makakonekta sa server.');
+        trialBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

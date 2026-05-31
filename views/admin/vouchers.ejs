@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    @media print {
+      body * { display: none; }
+      #printSheet { display: block !important; }
+      #printSheet, #printSheet * { 
+        display: block !important;
+        visibility: visible !important; 
+      }
+      #printSheet {
+        position: static !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .print-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 5mm !important;
+        width: 100% !important;
+      }
+      .pv {
+        border: 2px dashed #333 !important;
+        border-radius: 6px !important;
+        padding: 10px !important;
+        text-align: center !important;
+        page-break-inside: avoid !important;
+        background: white !important;
+        color: black !important;
+      }
+      .pv-code {
+        font-size: 18px !important;
+        font-weight: 900 !important;
+        font-family: monospace !important;
+        margin: 5px 0 !important;
+        color: #000 !important;
+      }
+      .pv-price {
+        font-size: 24px !important;
+        font-weight: 900 !important;
+        color: #1a3a6b !important;
+        margin: 3px 0 !important;
+      }
+      .pv-duration {
+        font-size: 12px !important;
+        color: #666 !important;
+      }
+    }
+  </style>
+</head>
+<body class="admin-body">
+
+<!-- Hidden Print Sheet -->
+<div id="printSheet" style="display:none;padding:10mm;background:white;width:100%;">
+  <div class="print-grid" id="printGrid"></div>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-title"><span>Sam's</span> WiFi</div>
+    <div class="brand-sub">Admin Panel</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/admin" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/admin/vouchers" class="nav-link active"><span class="nav-icon">🎫</span> Vouchers</a>
+  </nav>
+</aside>
+
+<!-- Main -->
+<main class="admin-main">
+  <div class="admin-topbar">
+    <h1>🎫 Generate Vouchers</h1>
+    <a href="/admin" class="btn btn-outline btn-sm">← Back</a>
+  </div>
+
+  <div class="admin-content">
+
+    <!-- Generate Section -->
+    <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
+      <h3 style="margin-bottom:16px;">⚡ Generate Vouchers</h3>
+      
+      <div style="margin-bottom:20px;">
+        <p style="font-size:0.85rem;color:var(--gray-400);margin-bottom:16px;">Select plan and quantity:</p>
+        
+        <!-- Plan Selection -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
+          <label style="padding:12px;border:2px solid rgba(102,126,234,0.5);border-radius:8px;background:rgba(102,126,234,0.1);cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="5min" checked style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱2</div>
+            <div style="font-size:11px;color:var(--gray-400);">5 Minutes</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="15min" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱5</div>
+            <div style="font-size:11px;color:var(--gray-400);">15 Minutes</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="30min" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱10</div>
+            <div style="font-size:11px;color:var(--gray-400);">30 Minutes</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="1hr" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱20</div>
+            <div style="font-size:11px;color:var(--gray-400);">1 Hour</div>
+          </label>
+          <label style="padding:12px;border:2px solid rgba(251,191,36,0.3);border-radius:8px;background:rgba(251,191,36,0.06);cursor:pointer;text-align:center;">
+            <input type="radio" name="plan" value="3hr" style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#fcd34d;">₱60</div>
+            <div style="font-size:11px;color:var(--gray-400);">3 Hours</div>
+          </label>
+        </div>
+
+        <!-- Quantity -->
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+          <label style="color:var(--gray-400);font-size:0.9rem;">Quantity:</label>
+          <select id="count" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--white);border-radius:6px;padding:8px 12px;font-family:var(--font);">
+            <option value="10">10</option>
+            <option value="20" selected>20 (1 sheet)</option>
+            <option value="40">40 (2 sheets)</option>
+            <option value="60">60 (3 sheets)</option>
+            <option value="100">100 (5 sheets)</option>
+          </select>
+          <button class="btn btn-success" onclick="generate()">⚡ Generate & Print</button>
+        </div>
+
+        <div id="genMsg" style="font-size:0.85rem;margin-bottom:12px;"></div>
+      </div>
+    </div>
+
+    <!-- Voucher List -->
+    <div class="card" style="background:rgba(255,255,255,0.03);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3>📋 Voucher List</h3>
+        <div style="font-size:0.85rem;color:var(--gray-400);">
+          Unused: <strong><%= counts.unused %></strong> | Active: <strong><%= counts.active %></strong>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <a href="/admin/vouchers?status=all" class="btn <%= currentStatus === 'all' ? 'btn-primary' : 'btn-outline' %> btn-sm">All (<%= counts.all %>)</a>
+        <a href="/admin/vouchers?status=unused" class="btn <%= currentStatus === 'unused' ? 'btn-primary' : 'btn-outline' %> btn-sm">Unused (<%= counts.unused %>)</a>
+        <a href="/admin/vouchers?status=active" class="btn <%= currentStatus === 'active' ? 'btn-primary' : 'btn-outline' %> btn-sm">Active (<%= counts.active %>)</a>
+        <a href="/admin/vouchers?status=expired" class="btn <%= currentStatus === 'expired' ? 'btn-primary' : 'btn-outline' %> btn-sm">Expired (<%= counts.expired %>)</a>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table style="width:100%;font-size:0.85rem;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Code</th>
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Plan</th>
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Status</th>
+              <th style="text-align:left;padding:8px 0;color:var(--gray-400);">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% vouchers.forEach(v => { %>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+              <td style="padding:8px 0;font-family:var(--mono);font-weight:600;color:#667eea;"><%= v.code %></td>
+              <td style="padding:8px 0;"><%= v.plan %></td>
+              <td style="padding:8px 0;">
+                <span style="padding:4px 8px;border-radius:4px;<%= v.status === 'unused' ? 'background:#4ade80;color:#000;' : v.status === 'active' ? 'background:#667eea;color:#fff;' : 'background:#666;color:#fff;' %>">
+                  <%= v.status.toUpperCase() %>
+                </span>
+              </td>
+              <td style="padding:8px 0;color:var(--gray-400);font-size:0.8rem;"><%= new Date(v.created_at).toLocaleDateString('en-PH') %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  async function generate() {
+    const plan = document.querySelector('input[name="plan"]:checked').value;
+    const count = document.getElementById('count').value;
+    const msg = document.getElementById('genMsg');
+
+    msg.innerHTML = '⏳ Generating...';
+    msg.style.color = 'var(--gray-400)';
+
+    try {
+      const res = await fetch('/admin/vouchers/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `plan=${plan}&count=${count}`
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        msg.innerHTML = `✅ Generated ${data.count} vouchers!`;
+        msg.style.color = '#4ade80';
+        
+        // Generate print vouchers
+        const grid = document.getElementById('printGrid');
+        grid.innerHTML = '';
+        
+        const planInfo = {
+          '5min': { price: '₱2', duration: '5 Min' },
+          '15min': { price: '₱5', duration: '15 Min' },
+          '30min': { price: '₱10', duration: '30 Min' },
+          '1hr': { price: '₱20', duration: '1 Hour' },
+          '3hr': { price: '₱60', duration: '3 Hours' }
+        };
+        
+        const info = planInfo[plan];
+        data.codes.forEach(code => {
+          const div = document.createElement('div');
+          div.className = 'pv';
+          div.innerHTML = `
+            <div class="pv-price">${info.price}</div>
+            <div class="pv-duration">${info.duration}</div>
+            <div class="pv-code">${code}</div>
+          `;
+          grid.appendChild(div);
+        });
+        
+        // Open print
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      } else {
+        msg.innerHTML = `❌ Error: ${data.error}`;
+        msg.style.color = '#ff6b6b';
+      }
+    } catch(e) {
+      msg.innerHTML = `❌ Error: ${e.message}`;
+      msg.style.color = '#ff6b6b';
+    }
+  }
+</script>
+</body>
+</html>
