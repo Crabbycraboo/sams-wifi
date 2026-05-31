@@ -34,9 +34,9 @@ router.post('/connect', (req, res) => {
     const sleepMode = getSleepMode();
 
     // Track free trial connection (by MAC if available)
-    if (mac) {
-      trackConnection(mac);
-    }
+   // Track free trial connection (by MAC if available, else by device fingerprint)
+const trackMac = mac || buildDeviceId(req);
+trackConnection(trackMac);
 
     const rateCheck = checkRateLimit(ip, 'code_attempt');
     if (!rateCheck.allowed) {
