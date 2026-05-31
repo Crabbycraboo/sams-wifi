@@ -15,7 +15,8 @@ router.get('/', async (req, res) => {
     res.render('login', { 
       title: "Sam's WiFi", 
       plans: plans || [], 
-      gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' } 
+      gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' },
+      sleepMode: false // <--- ADD THIS LINE HERE
     });
   } catch (err) {
     console.error(err);
