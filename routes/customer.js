@@ -12,12 +12,14 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
-    res.render('login', { 
-      title: "Sam's WiFi", 
-      plans: plans || [], 
-      gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' },
-      sleepMode: false // <--- ADD THIS LINE HERE
-    });
+    // Update your render block in routes/customer.js
+res.render('login', { 
+  title: "Sam's WiFi", 
+  plans: plans || [], 
+  gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' },
+  sleepMode: false,
+  error: null // <--- ADD THIS LINE HERE
+});
   } catch (err) {
     console.error(err);
     res.status(500).send("Database Error");
