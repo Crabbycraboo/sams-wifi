@@ -45,7 +45,6 @@
       animation: blink 1.5s ease-in-out infinite;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    
     /* Circular timer */
     .timer-wrap {
       position: relative;
@@ -182,7 +181,7 @@
         <div class="val"><%= voucher.code %></div>
       </div>
       <div class="info-cell">
-        <div class="lbl">Plano / Plan</div>
+        <div class="lbl">Plano / Duration</div>
         <div class="val"><%= voucher.duration_minutes %> Mins</div>
       </div>
       <div class="info-cell">
@@ -191,11 +190,7 @@
       </div>
       <div class="info-cell">
         <div class="lbl">Katayuan / Status</div>
-        <div class="val" style="color:var(--success);">● Aktibo</div>
-      </div>
-      <div class="info-cell full">
-        <div class="lbl">Network Allocation Token</div>
-        <div class="val" style="font-size: 0.85rem;"><%= voucher.token %></div>
+        <div class="val" style="color:var(--success);">● Aktibo / Active</div>
       </div>
     </div>
 
@@ -212,10 +207,9 @@
   <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
 
   <script>
-    const expiresAt = <%= voucher.expires_at %>;
-    
-    // SAFE FALLBACK: Programmatically checks server payload or evaluates local context runtime
-    const totalMs = <%= typeof msRemaining !== 'undefined' ? msRemaining : 'null' %> || (expiresAt - Date.now()); 
+    const expiresAt  = <%= voucher.expires_at %>;
+    const startedAt  = <%= voucher.started_at || Date.now() %>;
+    const totalMs    = expiresAt - startedAt;
     const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65
 
     const ring       = document.getElementById('timerRing');
@@ -223,7 +217,7 @@
     const warningBar = document.getElementById('warningBar');
     const expiryTime = document.getElementById('expiryTime');
 
-    // Render localized PH timestamp format
+    // Show expiry time localized to Philippines timezone
     expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
     ring.style.strokeDasharray  = CIRCUMFERENCE;
     ring.style.strokeDashoffset = 0;
@@ -237,7 +231,7 @@
         timerText.style.color = 'var(--danger)';
         ring.style.strokeDashoffset = CIRCUMFERENCE;
         ring.style.stroke = 'var(--danger)';
-        // FIXED: Added leading slash absolute anchor path
+        // FIXED: Added absolute route leading slash
         window.location.href = '/expired';
         return;
       }
@@ -246,11 +240,10 @@
       const secs = Math.floor((ms % 60000) / 1000);
       timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 
-      // Progress bar ring scaling layout math
+      // Progress ring calculations
       const progress = ms / totalMs;
       ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
-      // Warning indicator adjustments
       if (ms < 60000) {
         timerText.style.color = 'var(--danger)';
         ring.style.stroke = 'var(--danger)';
@@ -261,17 +254,16 @@
       }
     }
 
-    // Server-side polling to verify connection status drops safely
+    // Poll server to verify active session parameters
     async function checkSession() {
       try {
-        const res = await fetch(`/api/gateway/check?mac=<%= voucher.mac_address || "00:00:00:00:00:00" %>`);
-        const statusText = await res.text();
-        
-        if (statusText !== 'allow') {
-          // FIXED: Added leading slash absolute anchor path
+        const res  = await fetch('/api/session-status');
+        const data = await res.json();
+        if (data.status === 'expired' || data.status === 'no_session' || data.status === 'device_mismatch') {
+          // FIXED: Added absolute route leading slash
           window.location.href = '/expired';
         }
-      } catch(e) { /* Catch glitch exceptions to maintain uptime */ }
+      } catch(e) { /* network hiccup — keep running */ }
     }
 
     setInterval(updateTimer, 500);
