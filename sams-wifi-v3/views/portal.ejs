@@ -7,151 +7,152 @@
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body {
-      background: var(--blue-900); [cite: 39]
-      min-height: 100vh; [cite: 40]
-      display: flex; [cite: 40]
-      flex-direction: column; [cite: 40]
-      align-items: center; [cite: 40]
-      justify-content: center; [cite: 40]
-      padding: 20px; [cite: 40]
+      background: var(--blue-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
     .portal-card {
-      width: 100%; [cite: 41]
-      max-width: 440px; [cite: 41]
-      background: rgba(255,255,255,0.04); [cite: 41]
-      border: 1px solid rgba(255,255,255,0.08); [cite: 42]
-      border-radius: var(--radius); [cite: 42]
-      padding: 36px 28px; [cite: 42]
-      backdrop-filter: blur(20px); [cite: 42]
-      text-align: center; [cite: 42]
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      backdrop-filter: blur(20px);
+      text-align: center;
     }
     .status-badge {
-      display: inline-flex; [cite: 43]
-      align-items: center; [cite: 43]
-      gap: 6px; [cite: 43]
-      background: rgba(16,185,129,0.12); [cite: 43]
-      border: 1px solid rgba(16,185,129,0.3); [cite: 44]
-      color: var(--success); [cite: 44]
-      padding: 6px 14px; [cite: 44]
-      border-radius: 99px; [cite: 44]
-      font-size: 0.8rem; [cite: 44]
-      font-weight: 600; [cite: 44]
-      margin-bottom: 28px; [cite: 44]
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--success);
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 28px;
     }
     .status-dot {
-      width: 7px; height: 7px; [cite: 45]
-      background: var(--success); [cite: 45]
-      border-radius: 50%; [cite: 45]
-      animation: blink 1.5s ease-in-out infinite; [cite: 46]
+      width: 7px; height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
     }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} } [cite: 46]
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    
     /* Circular timer */
     .timer-wrap {
-      position: relative; [cite: 46]
-      width: 180px; [cite: 47]
-      height: 180px; [cite: 47]
-      margin: 0 auto 28px; [cite: 47]
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 28px;
     }
-    .timer-svg { transform: rotate(-90deg); } [cite: 47, 48]
-    .timer-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; } [cite: 48, 49]
+    .timer-svg { transform: rotate(-90deg); }
+    .timer-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
     .timer-ring {
-      fill: none; [cite: 49]
-      stroke: var(--accent); [cite: 49]
-      stroke-width: 8; [cite: 49]
-      stroke-linecap: round; [cite: 49]
-      stroke-dasharray: 502; [cite: 50]
-      stroke-dashoffset: 0; [cite: 50]
-      transition: stroke-dashoffset 1s linear, stroke 0.5s; [cite: 50]
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 502;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 0.5s;
     }
     .timer-inner {
-      position: absolute; [cite: 51]
-      inset: 0; [cite: 51]
-      display: flex; [cite: 51]
-      flex-direction: column; [cite: 51]
-      align-items: center; [cite: 52]
-      justify-content: center; [cite: 52]
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
     .timer-time {
-      font-size: 2.4rem; [cite: 52]
-      font-weight: 800; [cite: 52]
-      font-family: var(--mono); [cite: 53]
-      letter-spacing: 2px; [cite: 53]
-      line-height: 1; [cite: 53]
+      font-size: 2.4rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      letter-spacing: 2px;
+      line-height: 1;
     }
     .timer-label {
-      font-size: 0.65rem; [cite: 53]
-      letter-spacing: 2px; [cite: 54]
-      text-transform: uppercase; [cite: 54]
-      color: var(--gray-400); [cite: 54]
-      margin-top: 4px; [cite: 54]
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-top: 4px;
     }
     .info-grid {
-      display: grid; [cite: 54]
-      grid-template-columns: 1fr 1fr; [cite: 55]
-      gap: 12px; [cite: 55]
-      margin-bottom: 20px; [cite: 55]
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
     }
     .info-cell {
-      background: rgba(255,255,255,0.03); [cite: 55]
-      border: 1px solid rgba(255,255,255,0.07); [cite: 56]
-      border-radius: var(--radius-sm); [cite: 56]
-      padding: 14px 12px; [cite: 56]
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-sm);
+      padding: 14px 12px;
     }
     .info-cell .lbl {
-      font-size: 0.68rem; [cite: 56]
-      font-weight: 600; [cite: 57]
-      letter-spacing: 1px; [cite: 57]
-      text-transform: uppercase; [cite: 57]
-      color: var(--gray-400); [cite: 57]
-      margin-bottom: 6px; [cite: 57]
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 6px;
     }
     .info-cell .val {
-      font-size: 1rem; [cite: 58]
-      font-weight: 700; [cite: 58]
-      color: var(--white); [cite: 58]
-      font-family: var(--mono); [cite: 58]
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--white);
+      font-family: var(--mono);
     }
-    .info-cell.full { grid-column: 1 / -1; } [cite: 59, 60]
+    .info-cell.full { grid-column: 1 / -1; }
     .keep-open-note {
-      font-size: 0.78rem; [cite: 60]
-      color: var(--gray-400); [cite: 61]
-      margin-bottom: 20px; [cite: 61]
-      line-height: 1.5; [cite: 61]
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      margin-bottom: 20px;
+      line-height: 1.5;
     }
     .warning-bar {
-      background: rgba(239,68,68,0.12); [cite: 61]
-      border: 1px solid rgba(239,68,68,0.3); [cite: 62]
-      color: #fca5a5; [cite: 62]
-      padding: 10px 14px; [cite: 62]
-      border-radius: var(--radius-sm); [cite: 62]
-      font-size: 0.82rem; [cite: 62]
-      font-weight: 600; [cite: 62]
-      margin-bottom: 16px; [cite: 62]
-      display: none; [cite: 62]
-      animation: pulse 1s infinite; [cite: 62]
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
+      animation: pulse 1s infinite;
     }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} } [cite: 63]
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
     .btn-logout {
-      width: 100%; [cite: 63]
-      padding: 13px; [cite: 64]
-      background: transparent; [cite: 64]
-      color: var(--gray-400); [cite: 64]
-      border: 1.5px solid rgba(255,255,255,0.1); [cite: 64]
-      border-radius: var(--radius-sm); [cite: 64]
-      font-size: 0.9rem; [cite: 64]
-      font-weight: 600; [cite: 64]
-      cursor: pointer; [cite: 64]
-      transition: all 0.2s; [cite: 65]
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      color: var(--gray-400);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
     }
     .btn-logout:hover {
-      border-color: var(--danger); [cite: 65]
-      color: var(--danger); [cite: 66]
+      border-color: var(--danger);
+      color: var(--danger);
     }
     .footer-note {
-      text-align: center; [cite: 66]
-      margin-top: 20px; [cite: 67]
-      font-size: 0.75rem; [cite: 67]
-      color: var(--gray-400); [cite: 67]
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--gray-400);
     }
   </style>
 </head>
@@ -168,12 +169,12 @@
         <circle class="timer-ring" id="timerRing" cx="90" cy="90" r="80"/>
       </svg>
       <div class="timer-inner">
-        <div class="timer-time" id="timerText">--:--</div> [cite: 68]
+        <div class="timer-time" id="timerText">--:--</div>
         <div class="timer-label">Natitira / Remaining</div>
       </div>
     </div>
 
-    <div id="warningBar" class="warning-bar">⚠️ 2 minuto na lang! / 2 minutes left!</div> [cite: 69]
+    <div id="warningBar" class="warning-bar">⚠️ 2 minuto na lang! / 2 minutes left!</div>
 
     <div class="info-grid">
       <div class="info-cell">
@@ -199,11 +200,11 @@
     </div>
 
     <div class="keep-open-note">
-      📌 Huwag isara ang tab na ito habang konektado.<br> [cite: 71]
-      <small>Keep this tab open while connected.</small> [cite: 71]
+      📌 Huwag isara ang tab na ito habang konektado.<br>
+      <small>Keep this tab open while connected.</small>
     </div>
 
-    <form method="POST" action="logout">
+    <form method="POST" action="/logout">
       <button type="submit" class="btn-logout">📴 Mag-logout / Disconnect</button>
     </form>
   </div>
@@ -211,64 +212,70 @@
   <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
 
   <script>
-    const expiresAt  = <%= voucher.expires_at %>; [cite: 72]
-    // Fall back to simple programmatic mathematical subtraction parameters
-    const totalMs    = <%= msRemaining %>; 
-    const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65 [cite: 73]
+    const expiresAt = <%= voucher.expires_at %>;
+    
+    // SAFE FALLBACK: Programmatically checks server payload or evaluates local context runtime
+    const totalMs = <%= typeof msRemaining !== 'undefined' ? msRemaining : 'null' %> || (expiresAt - Date.now()); 
+    const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65
 
-    const ring       = document.getElementById('timerRing'); [cite: 74]
-    const timerText  = document.getElementById('timerText'); [cite: 74]
-    const warningBar = document.getElementById('warningBar'); [cite: 74]
-    const expiryTime = document.getElementById('expiryTime'); [cite: 74, 75]
+    const ring       = document.getElementById('timerRing');
+    const timerText  = document.getElementById('timerText');
+    const warningBar = document.getElementById('warningBar');
+    const expiryTime = document.getElementById('expiryTime');
 
-    expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }); [cite: 75]
-    ring.style.strokeDasharray  = CIRCUMFERENCE; [cite: 76]
-    ring.style.strokeDashoffset = 0; [cite: 76]
+    // Render localized PH timestamp format
+    expiryTime.textContent = new Date(expiresAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+    ring.style.strokeDasharray  = CIRCUMFERENCE;
+    ring.style.strokeDashoffset = 0;
 
     function updateTimer() {
       const now = Date.now();
-      const ms  = expiresAt - now; [cite: 77]
+      const ms  = expiresAt - now;
 
-      if (ms <= 0) { [cite: 78]
-        timerText.textContent = '00:00'; [cite: 78]
-        timerText.style.color = 'var(--danger)'; [cite: 78]
-        ring.style.strokeDashoffset = CIRCUMFERENCE; [cite: 78, 79]
-        ring.style.stroke = 'var(--danger)'; [cite: 79]
-        window.location.href = 'expired';
-        return; [cite: 79]
+      if (ms <= 0) {
+        timerText.textContent = '00:00';
+        timerText.style.color = 'var(--danger)';
+        ring.style.strokeDashoffset = CIRCUMFERENCE;
+        ring.style.stroke = 'var(--danger)';
+        // FIXED: Added leading slash absolute anchor path
+        window.location.href = '/expired';
+        return;
       }
 
-      const mins = Math.floor(ms / 60000); [cite: 79, 80]
-      const secs = Math.floor((ms % 60000) / 1000); [cite: 80]
-      timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0'); [cite: 80]
+      const mins = Math.floor(ms / 60000);
+      const secs = Math.floor((ms % 60000) / 1000);
+      timerText.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 
-      const progress = ms / totalMs; [cite: 81]
-      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress); [cite: 81]
+      // Progress bar ring scaling layout math
+      const progress = ms / totalMs;
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
-      if (ms < 60000) { [cite: 81, 82]
-        timerText.style.color = 'var(--danger)'; [cite: 82]
-        ring.style.stroke = 'var(--danger)'; [cite: 82]
-      } else if (ms < 2 * 60000) { [cite: 83]
-        timerText.style.color = '#fcd34d'; [cite: 83]
-        ring.style.stroke = '#fcd34d'; [cite: 83]
-        warningBar.style.display = 'block'; [cite: 83]
+      // Warning indicator adjustments
+      if (ms < 60000) {
+        timerText.style.color = 'var(--danger)';
+        ring.style.stroke = 'var(--danger)';
+      } else if (ms < 2 * 60000) {
+        timerText.style.color = '#fcd34d';
+        ring.style.stroke = '#fcd34d';
+        warningBar.style.display = 'block';
       }
     }
 
-    // Polling targeting relative checkpoint parameters cleanly
+    // Server-side polling to verify connection status drops safely
     async function checkSession() {
       try {
-        const res = await fetch(`api/gateway/check?mac=<%= voucher.mac_address || "00:00:00:00:00:00" %>`);
+        const res = await fetch(`/api/gateway/check?mac=<%= voucher.mac_address || "00:00:00:00:00:00" %>`);
         const statusText = await res.text();
         
         if (statusText !== 'allow') {
-          window.location.href = 'expired';
+          // FIXED: Added leading slash absolute anchor path
+          window.location.href = '/expired';
         }
-      } catch(e) { /* suppress crash on network glitches */ }
+      } catch(e) { /* Catch glitch exceptions to maintain uptime */ }
     }
 
-    setInterval(updateTimer, 500); [cite: 86]
-    updateTimer(); [cite: 86]
+    setInterval(updateTimer, 500);
+    updateTimer();
 
     setInterval(checkSession, 15000);
     checkSession();
