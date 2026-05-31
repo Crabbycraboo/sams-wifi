@@ -186,9 +186,10 @@
       <div class="brand-sub">Taytay, Rizal</div>
     </div>
 
-    <% if (sleepMode) { %>
+  <% if (sleepMode) { %>
       <div class="sleep-banner">
-        😴 Sleep Mode – Minimum plan is ₱5. Pay via GCash and message for your code.
+        😴 Sleep Mode – Minimum plan is ₱5.
+        Pay via GCash and message for your code.
       </div>
     <% } %>
 
@@ -201,12 +202,14 @@
       <% plans.forEach(plan => { %>
         <div class="plan-card">
           <div class="plan-price"><%= plan.name.split('–')[0].trim() %></div>
-          <div class="plan-dur"><%= plan.name.split('–')[1] ? plan.name.split('–')[1].trim() : '' %></div>
+          <div class="plan-dur"><%= plan.name.split('–')[1] ? plan.name.split('–')[1].trim() : plan.duration_minutes + ' Mins' %></div>
         </div>
       <% }) %>
     </div>
 
     <form method="POST" action="/connect">
+      <input type="hidden" name="mac" value="<%= mac %>">
+      
       <div style="margin-bottom: 20px;">
         <label class="form-label">Voucher Code</label>
         <input
@@ -226,6 +229,14 @@
       <button type="submit" class="btn-connect">🔗 Kumonekta / Connect</button>
     </form>
 
+    <% if (!sleepMode) { %>
+      <div style="margin-top: 16px; text-align: center;">
+        <button id="trialBtn" class="btn-logout" style="width:100%; border-color:var(--accent); color:var(--accent);">
+          🎁 Subukan ang Free 5-Mins Trial
+        </button>
+      </div>
+    <% } %>
+   
     <div class="gcash-box">
       <div class="gcash-label">💳 Walang code? / No code?</div>
       <div class="gcash-num"><%= gcash.number %></div>
@@ -238,5 +249,34 @@
   </div>
 
   <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
+
+  <script>
+    // Handles smooth client-side interaction with our cloud Free Trial endpoint
+    document.getElementById('trialBtn')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const trialBtn = e.target;
+      trialBtn.innerText = "⏳ Pag-activate...";
+      trialBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/trial/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mac: "<%= mac %>" })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = data.redirect;
+        } else {
+          alert(data.message || 'Error occurred.');
+          trialBtn.innerText = "🎁 Subukan ang Free 5-Mins Trial";
+          trialBtn.disabled = false;
+        }
+      } catch (err) {
+        alert('Hindi makakonekta sa server.');
+        trialBtn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
