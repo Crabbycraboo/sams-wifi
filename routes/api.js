@@ -25,7 +25,8 @@ router.get('/status', async (req, res) => {
 
 // Called by the router (no HTTPS needed on router side)
 router.get('/redeem', async (req, res) => {
-  const { code, mac } = req.query;
+  const code = req.query.code;
+  const mac  = req.query.mac;
   if (!code) return res.json({ ok: false, error: 'no code' });
 
   const { data, error } = await supabase
