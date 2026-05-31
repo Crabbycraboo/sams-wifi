@@ -234,7 +234,7 @@
           name="code"
           class="form-input"
           placeholder="SAM-XXXX"
-          [cite_start]value="<%= code %>" [cite: 36]
+          [cite_start]value="<%= code || '' %>" [cite: 36]
           maxlength="8"
           required
           autocomplete="off"
