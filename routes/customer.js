@@ -18,7 +18,8 @@ res.render('login', {
   plans: plans || [], 
   gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' },
   sleepMode: false,
-  error: null // <--- ADD THIS LINE HERE
+  error: null 
+  mac: null
 });
   } catch (err) {
     console.error(err);
