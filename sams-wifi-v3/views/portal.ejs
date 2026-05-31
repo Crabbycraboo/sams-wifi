@@ -162,7 +162,6 @@
       Konektado / Connected
     </div>
 
-    <!-- Circular timer -->
     <div class="timer-wrap">
       <svg class="timer-svg" width="180" height="180" viewBox="0 0 180 180">
         <circle class="timer-bg" cx="90" cy="90" r="80"/>
@@ -182,20 +181,20 @@
         <div class="val"><%= voucher.code %></div>
       </div>
       <div class="info-cell">
-        <div class="lbl">Plano / Plan</div>
-        <div class="val"><%= voucher.plan %></div>
-      </div>
-      <div class="info-cell">
-        <div class="lbl">Bayad / Price</div>
-        <div class="val">₱<%= voucher.price %></div>
+        <div class="lbl">Plano / Duration</div>
+        <div class="val"><%= voucher.duration_minutes %> Mins</div>
       </div>
       <div class="info-cell">
         <div class="lbl">Natapos sa / Expires</div>
         <div class="val" id="expiryTime">--:--</div>
       </div>
-      <div class="info-cell full">
+      <div class="info-cell">
         <div class="lbl">Katayuan / Status</div>
-        <div class="val" style="color:var(--success);">● Aktibo / Active</div>
+        <div class="val" style="color:var(--success);">● Aktibo</div>
+      </div>
+      <div class="info-cell full">
+        <div class="lbl">Network ID</div>
+        <div class="val" style="font-size: 0.85rem;"><%= voucher.token.startsWith('TRIAL-') ? 'Free Trial User' : 'Premium Client Asset' %></div>
       </div>
     </div>
 
@@ -211,10 +210,9 @@
 
   <div class="footer-note">📍 Sam's WiFi – Taytay, Rizal</div>
 
- <script>
-    // Pull real millisecond values calculated safely by your Supabase schema configuration
-    const expiresAt  = <%= voucher.expires_at %>;
-    const totalMs    = <%= msRemaining %>; 
+  <script>
+    const expiresAt   = <%= voucher.expires_at %>;
+    const totalMs     = <%= msRemaining %>; 
     const CIRCUMFERENCE = 2 * Math.PI * 80; // 502.65 [cite: 73]
 
     const ring       = document.getElementById('timerRing'); [cite: 74]
@@ -259,24 +257,22 @@
       }
     }
 
-    // Modernized Polling Engine: Automatically checks the live gateway status route!
     async function checkSession() {
       try {
-        // Querying our clean gateway check endpoint using a safe mock format
         const res = await fetch(`/api/gateway/check?mac=<%= voucher.mac_address || "00:00:00:00:00:00" %>`);
         const statusText = await res.text();
         
-        // If the system returns anything other than allow, bounce them out
         if (statusText !== 'allow') {
           window.location.href = '/expired';
         }
-      } catch(e) { /* network hiccup — suppress crash and keep running */ }
+      } catch(e) { /* network hiccup — keep running */ }
     }
 
     setInterval(updateTimer, 500); [cite: 86]
     updateTimer(); [cite: 86]
 
-    // Sync with cloud restrictions every 15 seconds
     setInterval(checkSession, 15000);
     checkSession();
   </script>
+</body>
+</html>
