@@ -2,25 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db/database');
 
+// Main portal route
 router.get('/', async (req, res) => {
-  if (req.session.voucherToken) return res.redirect('/portal');
-  
-  const { data: plans } = await supabase.from('pricing_tiers').select('*').eq('is_active', true);
-  res.render('login', { title: "Sam's WiFi", plans: plans || [], gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' } });
-});
+  try {
+    const { data: plans, error } = await supabase
+      .from('pricing_tiers')
+      .select('*')
+      .eq('is_active', true);
 
-router.get('/portal', async (req, res) => {
-  if (!req.session.voucherToken) return res.redirect('/');
-  
-  const { data: voucher } = await supabase.from('vouchers').select('*').eq('token', req.session.voucherToken).single();
-  
-  if (!voucher || voucher.status === 'expired') return res.redirect('/expired');
+    if (error) throw error;
 
-  res.render('portal', {
-    title: "Connected",
-    voucher: { code: voucher.token, expires_at: new Date(voucher.expires_at).getTime() },
-    msRemaining: Math.max(0, new Date(voucher.expires_at).getTime() - Date.now())
-  });
+    res.render('login', { 
+      title: "Sam's WiFi", 
+      plans: plans || [], 
+      gcash: { number: '09287440932', name: 'Aleina Faye Galapate Franco' } 
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Database Error");
+  }
 });
 
 module.exports = router;
