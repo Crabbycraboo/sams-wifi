@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { supabase, generateVoucherBatch } = require('../db/database');
 
-// Simple session protection check middleware
 function requireAdminAuth(req, res, next) {
   if (req.session && req.session.isAdminAuthenticated) {
     return next();
@@ -10,160 +9,146 @@ function requireAdminAuth(req, res, next) {
   res.redirect('/admin/login');
 }
 
-// 1. ADMIN LOGIN PAGE
+// 1. LOGIN PAGE
 router.get('/login', (req, res) => {
   if (req.session.isAdminAuthenticated) {
     return res.redirect('/admin/dashboard');
   }
-  res.render('admin/login', { 
-    title: "Sam's WiFi – Admin Access", 
-    error: req.query.error || null 
+  res.render('admin/login', {
+    title: "Sam's WiFi – Admin",
+    error: req.query.error || null
   });
 });
 
-// 2. ADMIN AUTHENTICATION HANDSHAKE
+// 2. LOGIN POST
 router.post('/login', (req, res) => {
   const { password } = req.body;
-  const adminSecretPassword = process.env.ADMIN_PASSWORD || 'admin1234';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin1234';
 
-  if (password === adminSecretPassword) {
+  if (password === adminPassword) {
     req.session.isAdminAuthenticated = true;
     return res.redirect('/admin/dashboard');
   }
-  res.redirect('/admin/login?error=Invalid Administrator Password.');
+  res.redirect('/admin/login?error=Invalid password.');
 });
 
-// 3. MASTER EXECUTIVE DASHBOARD PANEL
+// 3. DASHBOARD
 router.get('/dashboard', requireAdminAuth, async (req, res) => {
   try {
-    // A. Pull Active System Overrides
     const { data: settings } = await supabase.from('admin_settings').select('*');
     const systemSettings = {};
     settings?.forEach(s => systemSettings[s.setting_key] = s.setting_value);
 
-    // B. Pull All Selectable Pricing Tiers
-    const { data: tiers } = await supabase.from('pricing_tiers').select('*').order('price', { ascending: true });
+    const { data: tiers } = await supabase
+      .from('pricing_tiers')
+      .select('*')
+      .order('price', { ascending: true });
 
-    // C. Get Live Network Connections Metrics
     const { data: activeSessions } = await supabase
       .from('sessions')
       .select('*, vouchers(duration_minutes, expires_at)');
 
-    // D. SYSTEM SECURITY & ABUSE MATRIX QUERY
-    // Aggregate logs to find devices that triggered the trial over 3 times within the past 24 hours
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: abuseLogs } = await supabase
-      .from('logs')
-      .select('mac_address')
-      .eq('event_type', 'trial_exploit')
-      .gt('created_at', twentyFourHoursAgo);
-
-    // Count instances manually since we are using plain REST calls
-    const abuseCounts = {};
-    abuseLogs?.forEach(log => {
-      if (log.mac_address) {
-        abuseCounts[log.mac_address] = (abuseCounts[log.mac_address] || 0) + 1;
-      }
-    });
-
-    const repeaterDevices = Object.keys(abuseCounts)
-      .filter(mac => abuseCounts[mac] >= 3)
-      .map(mac => ({ mac, count: abuseCounts[mac] }));
-
-    // E. Pull Latest Operational Logs Audit Stream
     const { data: recentLogs } = await supabase
       .from('logs')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(15);
 
+    // Count vouchers by status
+    const { data: voucherCounts } = await supabase
+      .from('vouchers')
+      .select('status');
+
+    const counts = { unredeemed: 0, active: 0, expired: 0 };
+    voucherCounts?.forEach(v => {
+      if (counts[v.status] !== undefined) counts[v.status]++;
+    });
+
     res.render('admin/dashboard', {
       title: "Sam's WiFi Dashboard",
       settings: systemSettings,
       pricingTiers: tiers || [],
       activeSessions: activeSessions || [],
-      repeaterDevices,
-      logs: recentLogs || []
+      logs: recentLogs || [],
+      voucherCounts: counts,
+      error: req.query.error || null,
+      success: req.query.success || null
     });
 
   } catch (err) {
-    console.error('Admin Dashboard Hydration Failure:', err.message);
-    res.render('error', { title: "Admin Error", message: "Failed to load dashboard parameters." });
+    console.error('Dashboard error:', err.message);
+    res.render('error', { title: 'Admin Error', message: 'Failed to load dashboard.' });
   }
 });
 
-// 4. BATCH VOUCHER FACTORY GENERATOR
+// 4. GENERATE VOUCHERS
 router.post('/vouchers/generate', requireAdminAuth, async (req, res) => {
   const { tierId, count } = req.body;
-  
+
   if (!tierId || !count) {
-    return res.redirect('/admin/dashboard?error=Missing parameters.');
+    return res.redirect('/admin/dashboard?error=Missing tier or count.');
   }
 
   try {
-    // Read the targets of the selected bracket template
-    const { data: tier } = await supabase
+    const { data: tier, error: tierError } = await supabase
       .from('pricing_tiers')
       .select('*')
       .eq('id', parseInt(tierId))
       .single();
 
-    if (!tier) throw new Error('Selected plan template does not exist.');
+    if (tierError || !tier) {
+      return res.redirect('/admin/dashboard?error=Pricing tier not found.');
+    }
 
-    // Fire off the generation array logic into the cloud
-    const countInt = parseInt(count) || 20;
-    const generatedData = await generateVoucherBatch(tier.id, tier.duration_minutes, countInt);
+    const countInt = Math.min(parseInt(count) || 20, 100); // cap at 100
+    const generated = await generateVoucherBatch(tier.id, tier.duration_minutes, countInt);
 
-    // Filter tokens list out to pass into your printable print canvas preview
-    const printedTokens = generatedData.map(v => ({
+    const printVouchers = generated.map(v => ({
       token: v.token,
       duration: tier.duration_minutes,
       name: tier.name,
       price: tier.price
     }));
 
-    // Render your standard print sheets using your dedicated print stylesheets layout
-    res.render('admin/print-sheet', {
-      title: `Print Vouchers Batch - ${tier.name}`,
-      vouchers: printedTokens
+    res.render('admin/vouchers', {
+      title: `Vouchers — ${tier.name}`,
+      vouchers: printVouchers,
+      tier
     });
 
   } catch (err) {
-    console.error('Voucher Production Chain Error:', err.message);
-    res.redirect('/admin/dashboard?error=Production failed.');
+    console.error('Voucher generation error:', err.message);
+    res.redirect('/admin/dashboard?error=' + encodeURIComponent(err.message));
   }
 });
 
-// 5. TOGGLE SYSTEM SYSTEM OVERRIDES (Sleep mode or Free Trial Access)
+// 5. TOGGLE SETTINGS
 router.post('/settings/toggle', requireAdminAuth, async (req, res) => {
-  const { key, value } = req.body; // e.g. key: 'sleep_mode', value: 'true'
+  const { key, value } = req.body;
 
   try {
     const { error } = await supabase
       .from('admin_settings')
-      .update({ 
-        setting_value: value,
-        updated_at: new Date().toISOString()
-      })
+      .update({ setting_value: value, updated_at: new Date().toISOString() })
       .eq('setting_key', key);
 
     if (error) throw error;
 
     await supabase.from('logs').insert({
       event_type: 'admin_toggle',
-      description: `Admin changed setting configuration parameter [${key}] to status: ${value}.`
+      description: `Setting [${key}] changed to: ${value}`
     });
 
     res.json({ success: true });
   } catch (err) {
-    console.error('Toggle Action Update Defect:', err.message);
+    console.error('Settings toggle error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 6. ADMINISTRATIVE ACCOUNT DISCONNECT LOGOUT
+// 6. LOGOUT
 router.get('/logout', (req, res) => {
-  req.session.isAdminAuthenticated = false;
+  req.session.destroy();
   res.redirect('/admin/login');
 });
 
