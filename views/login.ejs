@@ -7,115 +7,114 @@
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body {
-      background: var(--blue-900); [cite: 1]
-      min-height: 100vh; [cite: 2]
-      display: flex; [cite: 2]
-      flex-direction: column; [cite: 2]
-      align-items: center; [cite: 2]
-      justify-content: center; [cite: 2]
-      padding: 20px; [cite: 2]
+      background: var(--blue-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
     .login-card {
-      width: 100%; [cite: 3]
-      max-width: 480px; [cite: 3]
-      background: rgba(255,255,255,0.04); [cite: 3]
-      border: 1px solid rgba(255,255,255,0.08); [cite: 4]
-      border-radius: var(--radius); [cite: 4]
-      padding: 40px 32px; [cite: 4]
-      backdrop-filter: blur(20px); [cite: 4]
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      backdrop-filter: blur(20px);
     }
     .brand {
-      text-align: center; [cite: 5]
-      margin-bottom: 32px; [cite: 5]
+      text-align: center;
+      margin-bottom: 32px;
     }
-    .brand-icon { font-size: 2.5rem; margin-bottom: 8px; } [cite: 6]
-    .brand h1 { font-size: 2rem; margin: 0; } [cite: 6, 7]
-    .brand h1 span { color: var(--accent); } [cite: 7]
-    .brand-sub { font-size: 0.85rem; color: var(--gray-400); margin-top: 4px; } [cite: 8]
+    .brand-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .brand h1 { font-size: 2rem; margin: 0; }
+    .brand h1 span { color: var(--accent); }
+    .brand-sub { font-size: 0.85rem; color: var(--gray-400); margin-top: 4px; }
     .plans-label {
-      font-size: 0.75rem; [cite: 8]
-      font-weight: 600; [cite: 9]
-      letter-spacing: 1px; [cite: 9]
-      text-transform: uppercase; [cite: 9]
-      color: var(--gray-400); [cite: 9]
-      margin-bottom: 12px; [cite: 9]
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 12px;
     }
     .plans-grid {
-      display: grid; [cite: 9]
-      grid-template-columns: repeat(3, 1fr); [cite: 10]
-      gap: 8px; [cite: 10]
-      margin-bottom: 24px; [cite: 10]
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
     }
     .plan-card {
-      background: rgba(255,255,255,0.04); [cite: 10]
-      border: 1.5px solid rgba(255,255,255,0.08); [cite: 11]
-      border-radius: var(--radius-sm); [cite: 11]
-      padding: 12px 8px; [cite: 11]
-      text-align: center; [cite: 11]
-      cursor: default; [cite: 11]
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
     }
     .plan-price {
-      font-size: 1.2rem; [cite: 12]
-      font-weight: 800; [cite: 12]
-      color: var(--accent); [cite: 12]
-      font-family: var(--mono); [cite: 12]
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-family: var(--mono);
     }
     .plan-dur {
-      font-size: 0.7rem; [cite: 13]
-      color: var(--gray-400); [cite: 13]
-      margin-top: 2px; [cite: 13]
+      font-size: 0.7rem;
+      color: var(--gray-400);
+      margin-top: 2px;
     }
     .form-label {
-      display: block; [cite: 14]
-      font-size: 0.75rem; [cite: 14]
-      font-weight: 600; [cite: 14]
-      letter-spacing: 1px; [cite: 14]
-      text-transform: uppercase; [cite: 15]
-      color: var(--gray-400); [cite: 15]
-      margin-bottom: 8px; [cite: 15]
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 8px;
     }
     .form-input {
-      width: 100%; [cite: 15]
-      padding: 14px 16px; [cite: 16]
-      background: rgba(255,255,255,0.06); [cite: 16]
-      border: 1.5px solid rgba(255,255,255,0.12); [cite: 16]
-      border-radius: var(--radius-sm); [cite: 16]
-      font-size: 1.1rem; [cite: 16]
-      font-family: var(--mono); [cite: 16]
-      color: var(--white); [cite: 16]
-      letter-spacing: 2px; [cite: 16]
-      text-transform: uppercase; [cite: 17]
-      box-sizing: border-box; [cite: 17]
-      transition: border-color 0.2s; [cite: 17]
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-sm);
+      font-size: 1.1rem;
+      font-family: var(--mono);
+      color: var(--white);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
     }
     .form-input:focus {
-      outline: none; [cite: 17]
-      border-color: var(--accent); [cite: 18]
-      box-shadow: 0 0 0 3px rgba(0,212,255,0.1); [cite: 18]
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
     }
-    .form-input::placeholder { color: var(--gray-400); letter-spacing: 1px; } [cite: 18, 19]
+    .form-input::placeholder { color: var(--gray-400); letter-spacing: 1px; }
     .form-hint {
-      font-size: 0.75rem; [cite: 19]
-      color: var(--gray-400); [cite: 19]
-      margin-top: 6px; [cite: 19]
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      margin-top: 6px;
     }
     .btn-connect {
-      width: 100%; [cite: 20]
-      padding: 15px; [cite: 20]
-      background: linear-gradient(135deg, var(--accent), #0090b3); [cite: 20]
-      color: var(--blue-900); [cite: 21]
-      border: none; [cite: 21]
-      border-radius: var(--radius-sm); [cite: 21]
-      font-size: 1rem; [cite: 21]
-      font-weight: 700; [cite: 21]
-      cursor: pointer; [cite: 21]
-      margin-top: 20px; [cite: 21]
-      transition: all 0.2s; [cite: 21]
-      letter-spacing: 0.5px; [cite: 21]
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--accent), #0090b3);
+      color: var(--blue-900);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
     }
     .btn-connect:hover {
-      transform: translateY(-2px); [cite: 22]
-      box-shadow: 0 8px 24px rgba(0,212,255,0.3); [cite: 22]
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,212,255,0.3);
     }
     .btn-trial {
       width: 100%;
@@ -135,63 +134,63 @@
       box-shadow: 0 0 15px rgba(0,212,255,0.2);
     }
     .error-alert {
-      background: rgba(239,68,68,0.12); [cite: 23]
-      border: 1px solid rgba(239,68,68,0.3); [cite: 23]
-      color: #fca5a5; [cite: 23]
-      padding: 12px 14px; [cite: 24]
-      border-radius: var(--radius-sm); [cite: 24]
-      margin-bottom: 20px; [cite: 24]
-      font-size: 0.85rem; [cite: 24]
-      line-height: 1.5; [cite: 24]
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      line-height: 1.5;
     }
     .gcash-box {
-      margin-top: 24px; [cite: 25]
-      background: rgba(0,212,255,0.05); [cite: 25]
-      border: 1px solid rgba(0,212,255,0.15); [cite: 25]
-      border-radius: var(--radius-sm); [cite: 26]
-      padding: 18px; [cite: 26]
-      text-align: center; [cite: 26]
+      margin-top: 24px;
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.15);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      text-align: center;
     }
     .gcash-label {
-      font-size: 0.75rem; [cite: 26]
-      color: var(--gray-400); [cite: 27]
-      text-transform: uppercase; [cite: 27]
-      letter-spacing: 1px; [cite: 27]
-      margin-bottom: 8px; [cite: 27]
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
     }
     .gcash-num {
-      font-size: 1.4rem; [cite: 27]
-      font-weight: 800; [cite: 28]
-      font-family: var(--mono); [cite: 28]
-      color: var(--accent); [cite: 28]
-      letter-spacing: 2px; [cite: 28]
+      font-size: 1.4rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      color: var(--accent);
+      letter-spacing: 2px;
     }
     .gcash-name {
-      font-size: 0.8rem; [cite: 28]
-      color: var(--gray-400); [cite: 29]
-      margin-top: 4px; [cite: 29]
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      margin-top: 4px;
     }
     .gcash-note {
-      font-size: 0.75rem; [cite: 29]
-      color: var(--gray-400); [cite: 29]
-      margin-top: 10px; [cite: 30]
-      line-height: 1.5; [cite: 30]
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      margin-top: 10px;
+      line-height: 1.5;
     }
     .sleep-banner {
-      background: rgba(251,191,36,0.1); [cite: 30]
-      border: 1px solid rgba(251,191,36,0.25); [cite: 31]
-      color: #fcd34d; [cite: 31]
-      padding: 10px 14px; [cite: 31]
-      border-radius: var(--radius-sm); [cite: 31]
-      font-size: 0.82rem; [cite: 31]
-      text-align: center; [cite: 31]
-      margin-bottom: 20px; [cite: 31]
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.25);
+      color: #fcd34d;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      text-align: center;
+      margin-bottom: 20px;
     }
     .footer-note {
-      text-align: center; [cite: 32]
-      margin-top: 20px; [cite: 33]
-      font-size: 0.75rem; [cite: 33]
-      color: var(--gray-400); [cite: 33]
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--gray-400);
     }
   </style>
 </head>
@@ -203,29 +202,35 @@
       <div class="brand-sub">Taytay, Rizal</div>
     </div>
 
-    <% if (sleepMode) { %>
+    <% if (typeof sleepMode !== 'undefined' && sleepMode) { %>
       <div class="sleep-banner">
-        😴 Sleep Mode – Minimum plan is ₱5. [cite: 33]
-        Pay via GCash and message for your code. [cite: 34]
+        😴 Sleep Mode – Minimum plan is ₱5.
+        Pay via GCash and message for your code.
       </div>
     <% } %>
 
-    <% if (error) { %>
+    <% if (typeof error !== 'undefined' && error) { %>
       <div class="error-alert">⚠️ <%= error %></div>
     <% } %>
 
     <div class="plans-label">Available Plans</div>
     <div class="plans-grid">
-      <% plans.forEach(plan => { %>
-        <div class="plan-card">
-          <div class="plan-price"><%= plan.name.split('–')[0].trim() %></div>
-          <div class="plan-dur"><%= plan.name.split('–')[1] ? plan.name.split('–')[1].trim() : plan.duration_minutes + ' Mins' %></div>
+      <% if (typeof plans !== 'undefined' && plans.length > 0) { %>
+        <% plans.forEach(plan => { %>
+          <div class="plan-card">
+            <div class="plan-price"><%= plan.name.split('–')[0].trim() %></div>
+            <div class="plan-dur"><%= plan.name.split('–')[1] ? plan.name.split('–')[1].trim() : plan.duration_minutes + ' Mins' %></div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div style="grid-column:1/-1; color: var(--gray-400); font-size:0.85rem; text-align:center;">
+          Loading plans...
         </div>
-      <% }) %>
+      <% } %>
     </div>
 
-    <form method="POST" action="connect">
-      <input type="hidden" name="mac" value="<%= mac %>">
+    <form method="POST" action="/redeem">
+      <input type="hidden" name="mac" value="<%= (typeof mac !== 'undefined' && mac) ? mac : '' %>">
 
       <div style="margin-bottom: 20px;">
         <label class="form-label">Voucher Code</label>
@@ -233,9 +238,9 @@
           type="text"
           name="code"
           class="form-input"
-          placeholder="SAM-XXXX"
-          [cite_start]value="<%= code || '' %>" [cite: 36]
-          maxlength="8"
+          placeholder="SAM-XXXXXXXX"
+          value=""
+          maxlength="12"
           required
           autocomplete="off"
           autocorrect="off"
@@ -246,17 +251,17 @@
       <button type="submit" class="btn-connect">🔗 Kumonekta / Connect</button>
     </form>
 
-    <% if (!sleepMode) { %>
+    <% if (typeof sleepMode === 'undefined' || !sleepMode) { %>
       <button id="trialBtn" class="btn-trial">🎁 Subukan ang Free 5-Mins Trial</button>
     <% } %>
-   
-    <div class="gcash-box"> [cite: 37]
-      <div class="gcash-label">💳 Walang code? / No code?</div> [cite: 37, 38]
-      <div class="gcash-num"><%= gcash.number %></div> [cite: 38]
-      <div class="gcash-name"><%= gcash.name %></div> [cite: 38]
+
+    <div class="gcash-box">
+      <div class="gcash-label">💳 Walang code? / No code?</div>
+      <div class="gcash-num"><%= (typeof gcash !== 'undefined' && gcash) ? gcash.number : '09985801867' %></div>
+      <div class="gcash-name"><%= (typeof gcash !== 'undefined' && gcash) ? gcash.name : 'Sam' %></div>
       <div class="gcash-note">
-        Mag-GCash ng bayad at i-message ang ref number para sa inyong code.<br> [cite: 38]
-        <small>Send payment via GCash + message your ref # for your code.</small> [cite: 38]
+        Mag-GCash ng bayad at i-message ang ref number para sa inyong code.<br>
+        <small>Send payment via GCash + message your ref # for your code.</small>
       </div>
     </div>
   </div>
@@ -271,11 +276,10 @@
       trialBtn.disabled = true;
 
       try {
-        // Pointing to relative API endpoint to fit monorepo structure safely
-        const res = await fetch('api/trial/activate', {
+        const res = await fetch('/api/trial/activate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mac: "<%= mac %>" })
+          body: JSON.stringify({ mac: '' })
         });
         const data = await res.json();
         if (data.success) {
