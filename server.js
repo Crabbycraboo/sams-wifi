@@ -27,11 +27,12 @@ app.use(session({
   }
 }));
 
-app.get('/health', (req, res) => res.status(200).json({ status: 'healthy' }));
-
+// Route Registration
 app.use('/', require('./routes/customer'));
 app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
+
+app.get('/health', (req, res) => res.status(200).json({ status: 'healthy' }));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
