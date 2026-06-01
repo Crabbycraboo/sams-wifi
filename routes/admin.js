@@ -8,6 +8,10 @@ function requireAdminAuth(req, res, next) {
   }
   res.redirect('/admin/login');
 }
+// ADD THIS RIGHT HERE
+router.get('/', requireAdminAuth, (req, res) => {
+  res.redirect('/admin/dashboard');
+});
 
 // 1. LOGIN PAGE
 router.get('/login', (req, res) => {
