@@ -13,7 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('trust proxy', 1);
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'taytay-sams-wifi-2026',
+  secret: process.env.SESSION_SECRET || 'taytay-sams-wifi-2024',
   resave: false,
   saveUninitialized: false,
   rolling: true,
