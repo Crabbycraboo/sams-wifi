@@ -1,3 +1,4 @@
+const pgSession = require('connect-pg-simple')(session);
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
@@ -13,9 +14,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('trust proxy', 1);
 
 app.use(session({
+  store: new pgSession({
+    conString: process.env.SUPABASE_DB_URL,
+    tableName: 'user_sessions',
+    createTableIfMissing: true
+  }),
   secret: process.env.SESSION_SECRET || 'taytay-sams-wifi-2026',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
 // Route Registration
