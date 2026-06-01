@@ -177,7 +177,9 @@
         <select name="pricing_tier_id" class="form-input" required>
           <option value="">Select a plan...</option>
           <% pricingTiers.forEach(tier => { %>
-            <option value="<%= tier.id %>"><%= tier.name %> — ₱<%= tier.price.toFixed(2) %> / <%= tier.duration_minutes %> min</option>
+            <% if (tier.price > 0) { %>
+              <option value="<%= tier.id %>"><%= tier.name %> — ₱<%= tier.price.toFixed(2) %> / <%= tier.duration_minutes %> min</option>
+            <% } %>
           <% }) %>
         </select>
       </div>
