@@ -14,17 +14,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('trust proxy', 1);
 
 app.use(session({
-  store: new pgSession({
-    conString: process.env.SUPABASE_DB_URL,
-    tableName: 'user_sessions',
-    createTableIfMissing: true
-  }),
   secret: process.env.SESSION_SECRET || 'taytay-sams-wifi-2026',
-  resave: false,
+  resave: true,
   saveUninitialized: false,
+  rolling: true,
   cookie: {
     secure: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    sameSite: 'none',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
 
