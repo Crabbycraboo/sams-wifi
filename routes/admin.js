@@ -193,7 +193,157 @@ router.post('/settings/toggle', requireAdminAuth, async (req, res) => {
   }
 });
 
-// 7. LOGOUT
+// 8. ORDERS PAGE
+router.get('/orders', requireAdminAuth, async (req, res) => {
+  try {
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('*, pricing_tiers(name, price, duration_minutes)')
+      .order('created_at', { ascending: false });
+
+    const { data: tiers } = await supabase
+      .from('pricing_tiers')
+      .select('*')
+      .eq('is_active', true)
+      .order('price', { ascending: true });
+
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+    const counts = {
+      pending: 0,
+      paidToday: 0,
+      cancelled: 0
+    };
+
+    (orders || []).forEach(o => {
+      if (o.status === 'pending') counts.pending++;
+      if (o.status === 'paid' && o.paid_at && o.paid_at >= startOfDay) counts.paidToday++;
+      if (o.status === 'cancelled') counts.cancelled++;
+    });
+
+    res.render('admin/orders', {
+      title: "Orders — Sam's WiFi",
+      orders: orders || [],
+      pricingTiers: tiers || [],
+      counts,
+      error: req.query.error || null,
+      success: req.query.success || null
+    });
+  } catch (err) {
+    console.error('Orders page error:', err.message);
+    res.redirect('/admin/dashboard?error=' + encodeURIComponent(err.message));
+  }
+});
+
+// 9. CREATE ORDER (POST)
+router.post('/orders/create', requireAdminAuth, async (req, res) => {
+  const { customer_name, customer_contact, pricing_tier_id } = req.body;
+
+  if (!customer_name || !pricing_tier_id) {
+    return res.redirect('/admin/orders?error=' + encodeURIComponent('Name and plan are required.'));
+  }
+
+  try {
+    const { error } = await supabase.from('orders').insert({
+      customer_name: customer_name.trim(),
+      customer_contact: customer_contact?.trim() || null,
+      pricing_tier_id: parseInt(pricing_tier_id),
+      status: 'pending'
+    });
+
+    if (error) throw error;
+
+    await supabase.from('logs').insert({
+      event_type: 'order_created',
+      description: `New order created for ${customer_name.trim()}`
+    });
+
+    res.redirect('/admin/orders?success=' + encodeURIComponent('Order created.'));
+  } catch (err) {
+    res.redirect('/admin/orders?error=' + encodeURIComponent(err.message));
+  }
+});
+
+// 10. MARK ORDER PAID — assigns a voucher, returns JSON
+router.post('/orders/:id/pay', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Fetch the order
+    const { data: order, error: orderErr } = await supabase
+      .from('orders')
+      .select('*, pricing_tiers(name, price, duration_minutes)')
+      .eq('id', id)
+      .single();
+
+    if (orderErr || !order) return res.json({ success: false, error: 'Order not found.' });
+    if (order.status !== 'pending') return res.json({ success: false, error: 'Order is not pending.' });
+
+    // Find an unused voucher for this tier
+    const { data: voucher, error: vErr } = await supabase
+      .from('vouchers')
+      .select('token')
+      .eq('pricing_tier_id', order.pricing_tier_id)
+      .eq('status', 'unredeemed')
+      .limit(1)
+      .single();
+
+    if (vErr || !voucher) {
+      return res.json({ success: false, error: 'No unused vouchers available for this plan. Generate more first.' });
+    }
+
+    // Update order to paid
+    const { error: updateErr } = await supabase
+      .from('orders')
+      .update({
+        status: 'paid',
+        voucher_token: voucher.token,
+        paid_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (updateErr) throw updateErr;
+
+    await supabase.from('logs').insert({
+      event_type: 'order_paid',
+      description: `Order paid for ${order.customer_name} — voucher ${voucher.token} assigned`
+    });
+
+    res.json({
+      success: true,
+      voucher: voucher.token,
+      plan: order.pricing_tiers?.name,
+      customer: order.customer_name
+    });
+  } catch (err) {
+    console.error('Order pay error:', err.message);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// 11. CANCEL ORDER
+router.post('/orders/:id/cancel', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data: order } = await supabase.from('orders').select('customer_name, status').eq('id', id).single();
+    if (!order) return res.redirect('/admin/orders?error=Order+not+found.');
+
+    await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
+
+    await supabase.from('logs').insert({
+      event_type: 'order_cancelled',
+      description: `Order cancelled for ${order.customer_name}`
+    });
+
+    res.redirect('/admin/orders?success=' + encodeURIComponent('Order cancelled.'));
+  } catch (err) {
+    res.redirect('/admin/orders?error=' + encodeURIComponent(err.message));
+  }
+});
+
+// 12. LOGOUT
 router.get('/logout', (req, res) => {
   req.session.destroy();
   res.redirect('/admin/login');
