@@ -1,4 +1,3 @@
-const pgSession = require('connect-pg-simple')(session);
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
@@ -21,7 +20,7 @@ app.use(session({
   cookie: {
     secure: true,
     sameSite: 'none',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000
   }
 }));
 
