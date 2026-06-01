@@ -14,13 +14,27 @@ app.set('trust proxy', 1);
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'taytay-sams-wifi-2026',
-  resave: true,
+  resave: false,
   saveUninitialized: false,
   rolling: true,
   cookie: {
     secure: true,
     sameSite: 'none',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000
+  },
+  store: {
+    get: async (sid, cb) => {
+      const { data } = await supabase.from('user_sessions').select('sess').eq('sid', sid).single();
+      cb(null, data ? data.sess : null);
+    },
+    set: async (sid, sess, cb) => {
+      await supabase.from('user_sessions').upsert({ sid, sess, expire: new Date(Date.now() + 86400000).toISOString() });
+      cb(null);
+    },
+    destroy: async (sid, cb) => {
+      await supabase.from('user_sessions').delete().eq('sid', sid);
+      cb(null);
+    }
   }
 }));
 
