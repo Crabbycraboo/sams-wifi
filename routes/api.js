@@ -101,7 +101,37 @@ router.get('/expire', async (req, res) => {
       event_type: 'expire',
       description: `Voucher ${code} expired. MAC: ${mac}`
     });
+router.get('/trial', async (req, res) => {
+  const mac = req.query.mac || 'unknown';
 
+  // Check if this MAC already used a trial
+  const { data: existing } = await supabase
+    .from('logs')
+    .select('id')
+    .eq('mac_address', mac)
+    .eq('event_type', 'trial')
+    .single();
+
+  if (existing) return res.json({ ok: false, error: 'Trial already used' });
+
+  // Get trial tier (price = 0)
+  const { data: tier } = await supabase
+    .from('pricing_tiers')
+    .select('duration_minutes')
+    .eq('price', 0)
+    .single();
+
+  if (!tier) return res.json({ ok: false, error: 'No trial available' });
+
+  // Log the trial
+  await supabase.from('logs').insert({
+    mac_address: mac,
+    event_type: 'trial',
+    description: `Free trial used by MAC: ${mac}`
+  });
+
+  res.json({ ok: true, duration: tier.duration_minutes });
+});
   res.json({ ok: true });
 });
 
