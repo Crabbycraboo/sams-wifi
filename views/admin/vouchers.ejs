@@ -185,10 +185,26 @@
 </main>
 
 <script>
+  // Map plan values to tier IDs from the database
+  const tierMap = {
+    '5min':  '<%= pricingTiers.find(t => t.duration_minutes === 5 && t.price > 0)?.id %>',
+    '15min': '<%= pricingTiers.find(t => t.duration_minutes === 15)?.id %>',
+    '30min': '<%= pricingTiers.find(t => t.duration_minutes === 30)?.id %>',
+    '1hr':   '<%= pricingTiers.find(t => t.duration_minutes === 60)?.id %>',
+    '3hr':   '<%= pricingTiers.find(t => t.duration_minutes === 180)?.id %>'
+  };
+
   async function generate() {
     const plan = document.querySelector('input[name="plan"]:checked').value;
     const count = document.getElementById('count').value;
     const msg = document.getElementById('genMsg');
+    const tierId = tierMap[plan];
+
+    if (!tierId || tierId === 'undefined') {
+      msg.innerHTML = '❌ Error: Pricing tier not found in database.';
+      msg.style.color = '#ff6b6b';
+      return;
+    }
 
     msg.innerHTML = '⏳ Generating...';
     msg.style.color = 'var(--gray-400)';
@@ -197,7 +213,7 @@
       const res = await fetch('/admin/vouchers/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `plan=${plan}&count=${count}`
+        body: `tierId=${tierId}&count=${count}`
       });
       const data = await res.json();
 
@@ -205,16 +221,15 @@
         msg.innerHTML = `✅ Generated ${data.count} vouchers!`;
         msg.style.color = '#4ade80';
         
-        // Generate print vouchers
         const grid = document.getElementById('printGrid');
         grid.innerHTML = '';
         
         const planInfo = {
-          '5min': { price: '₱2', duration: '5 Min' },
-          '15min': { price: '₱5', duration: '15 Min' },
+          '5min':  { price: '₱2',  duration: '5 Min' },
+          '15min': { price: '₱5',  duration: '15 Min' },
           '30min': { price: '₱10', duration: '30 Min' },
-          '1hr': { price: '₱20', duration: '1 Hour' },
-          '3hr': { price: '₱60', duration: '3 Hours' }
+          '1hr':   { price: '₱20', duration: '1 Hour' },
+          '3hr':   { price: '₱60', duration: '3 Hours' }
         };
         
         const info = planInfo[plan];
@@ -229,10 +244,10 @@
           grid.appendChild(div);
         });
         
-        // Open print
-        setTimeout(() => {
-          window.print();
-        }, 500);
+        setTimeout(() => window.print(), 500);
+
+        // Reload voucher list after 2 seconds
+        setTimeout(() => location.reload(), 2000);
       } else {
         msg.innerHTML = `❌ Error: ${data.error}`;
         msg.style.color = '#ff6b6b';
