@@ -10,9 +10,9 @@
     @media print {
       body * { display: none; }
       #printSheet { display: block !important; }
-      #printSheet, #printSheet * { 
+      #printSheet, #printSheet * {
         display: block !important;
-        visibility: visible !important; 
+        visibility: visible !important;
       }
       #printSheet {
         position: static !important;
@@ -45,12 +45,17 @@
       .pv-price {
         font-size: 24px !important;
         font-weight: 900 !important;
-        color: #1a3a6b !important;
+        color: #3d2314 !important;
         margin: 3px 0 !important;
       }
       .pv-duration {
         font-size: 12px !important;
         color: #666 !important;
+      }
+      .pv-brand {
+        font-size: 10px !important;
+        color: #999 !important;
+        margin-top: 4px !important;
       }
     }
   </style>
@@ -87,37 +92,25 @@
     <!-- Generate Section -->
     <div class="card" style="background:rgba(255,255,255,0.03);margin-bottom:24px;">
       <h3 style="margin-bottom:16px;">⚡ Generate Vouchers</h3>
-      
+
       <div style="margin-bottom:20px;">
         <p style="font-size:0.85rem;color:var(--gray-400);margin-bottom:16px;">Select plan and quantity:</p>
-        
-        <!-- Plan Selection -->
+
+        <!-- Plan Selection — dynamic from DB -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
-          <label style="padding:12px;border:2px solid rgba(102,126,234,0.5);border-radius:8px;background:rgba(102,126,234,0.1);cursor:pointer;text-align:center;">
-            <input type="radio" name="plan" value="5min" checked style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱2</div>
-            <div style="font-size:11px;color:var(--gray-400);">5 Minutes</div>
+          <% pricingTiers.filter(t => t.price > 0).forEach((tier, i) => {
+            const dur = tier.duration_minutes;
+            const durLabel = dur >= 60 ? (dur / 60) + (dur === 60 ? ' Hour' : ' Hours') : dur + ' Min';
+            const priceLabel = '₱' + tier.price;
+            const isFirst = i === 0;
+            const isLast = i === pricingTiers.filter(t => t.price > 0).length - 1;
+          %>
+          <label style="padding:12px;border:2px solid <%= isLast ? 'rgba(196,154,108,0.4)' : 'rgba(255,255,255,0.15)' %>;border-radius:8px;background:<%= isLast ? 'rgba(196,154,108,0.07)' : (isFirst ? 'rgba(61,35,20,0.4)' : 'transparent') %>;cursor:pointer;text-align:center;" onclick="selectTier(this, '<%= tier.id %>', '<%= priceLabel %>', '<%= durLabel %>')">
+            <input type="radio" name="plan" value="<%= tier.id %>" <%= isFirst ? 'checked' : '' %> style="margin-right:6px;">
+            <div style="font-size:18px;font-weight:bold;color:#c49a6c;"><%= priceLabel %></div>
+            <div style="font-size:11px;color:var(--gray-400);"><%= durLabel %></div>
           </label>
-          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
-            <input type="radio" name="plan" value="15min" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱5</div>
-            <div style="font-size:11px;color:var(--gray-400);">15 Minutes</div>
-          </label>
-          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
-            <input type="radio" name="plan" value="30min" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱10</div>
-            <div style="font-size:11px;color:var(--gray-400);">30 Minutes</div>
-          </label>
-          <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
-            <input type="radio" name="plan" value="1hr" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱20</div>
-            <div style="font-size:11px;color:var(--gray-400);">1 Hour</div>
-          </label>
-          <label style="padding:12px;border:2px solid rgba(251,191,36,0.3);border-radius:8px;background:rgba(251,191,36,0.06);cursor:pointer;text-align:center;">
-            <input type="radio" name="plan" value="3hr" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#fcd34d;">₱60</div>
-            <div style="font-size:11px;color:var(--gray-400);">3 Hours</div>
-          </label>
+          <% }) %>
         </div>
 
         <!-- Quantity -->
@@ -185,23 +178,37 @@
 </main>
 
 <script>
-  // Map plan values to tier IDs from the database
-  const tierMap = {
-    '5min':  '<%= pricingTiers.find(t => t.duration_minutes === 5 && t.price > 0)?.id %>',
-    '15min': '<%= pricingTiers.find(t => t.duration_minutes === 15)?.id %>',
-    '30min': '<%= pricingTiers.find(t => t.duration_minutes === 30)?.id %>',
-    '1hr':   '<%= pricingTiers.find(t => t.duration_minutes === 60)?.id %>',
-    '3hr':   '<%= pricingTiers.find(t => t.duration_minutes === 180)?.id %>'
-  };
+  // Track selected tier from EJS-rendered cards
+  let selectedTierId = '<%= pricingTiers.filter(t => t.price > 0)[0]?.id %>';
+  let selectedPriceLabel = '';
+  let selectedDurLabel = '';
+
+  // Pre-populate from first tier
+  <% const firstPaid = pricingTiers.filter(t => t.price > 0)[0]; %>
+  <% if (firstPaid) { %>
+    selectedPriceLabel = '₱<%= firstPaid.price %>';
+    selectedDurLabel = '<%= firstPaid.duration_minutes >= 60 ? (firstPaid.duration_minutes/60) + (firstPaid.duration_minutes===60?" Hour":" Hours") : firstPaid.duration_minutes + " Min" %>';
+  <% } %>
+
+  function selectTier(label, tierId, priceLabel, durLabel) {
+    selectedTierId = tierId;
+    selectedPriceLabel = priceLabel;
+    selectedDurLabel = durLabel;
+    // Update border highlight
+    document.querySelectorAll('label[onclick]').forEach(l => {
+      l.style.borderColor = 'rgba(255,255,255,0.15)';
+      l.style.background = 'transparent';
+    });
+    label.style.borderColor = '#c49a6c';
+    label.style.background = 'rgba(196,154,108,0.12)';
+  }
 
   async function generate() {
-    const plan = document.querySelector('input[name="plan"]:checked').value;
     const count = document.getElementById('count').value;
     const msg = document.getElementById('genMsg');
-    const tierId = tierMap[plan];
 
-    if (!tierId || tierId === 'undefined') {
-      msg.innerHTML = '❌ Error: Pricing tier not found in database.';
+    if (!selectedTierId || selectedTierId === 'undefined') {
+      msg.innerHTML = '❌ Error: No tier selected.';
       msg.style.color = '#ff6b6b';
       return;
     }
@@ -213,40 +220,30 @@
       const res = await fetch('/admin/vouchers/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `tierId=${tierId}&count=${count}`
+        body: `tierId=${selectedTierId}&count=${count}`
       });
       const data = await res.json();
 
       if (data.success) {
         msg.innerHTML = `✅ Generated ${data.count} vouchers!`;
         msg.style.color = '#4ade80';
-        
+
         const grid = document.getElementById('printGrid');
         grid.innerHTML = '';
-        
-        const planInfo = {
-          '5min':  { price: '₱2',  duration: '5 Min' },
-          '15min': { price: '₱5',  duration: '15 Min' },
-          '30min': { price: '₱10', duration: '30 Min' },
-          '1hr':   { price: '₱20', duration: '1 Hour' },
-          '3hr':   { price: '₱60', duration: '3 Hours' }
-        };
-        
-        const info = planInfo[plan];
+
         data.codes.forEach(code => {
           const div = document.createElement('div');
           div.className = 'pv';
           div.innerHTML = `
-            <div class="pv-price">${info.price}</div>
-            <div class="pv-duration">${info.duration}</div>
+            <div class="pv-price">${selectedPriceLabel}</div>
+            <div class="pv-duration">${selectedDurLabel}</div>
             <div class="pv-code">${code}</div>
+            <div class="pv-brand">39ers – EastBank Cainta</div>
           `;
           grid.appendChild(div);
         });
-        
-        setTimeout(() => window.print(), 500);
 
-        // Reload voucher list after 2 seconds
+        setTimeout(() => window.print(), 500);
         setTimeout(() => location.reload(), 2000);
       } else {
         msg.innerHTML = `❌ Error: ${data.error}`;
