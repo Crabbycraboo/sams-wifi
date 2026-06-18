@@ -65,7 +65,7 @@
 <!-- Sidebar -->
 <aside class="sidebar">
   <div class="sidebar-brand">
-    <div class="brand-title"><span>Sam's</span> WiFi</div>
+    <div class="brand-title"><span>39ers</span> Piso WiFi</div>
     <div class="brand-sub">Admin Panel</div>
   </div>
   <nav class="sidebar-nav">
@@ -95,22 +95,22 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
           <label style="padding:12px;border:2px solid rgba(102,126,234,0.5);border-radius:8px;background:rgba(102,126,234,0.1);cursor:pointer;text-align:center;">
             <input type="radio" name="plan" value="5min" checked style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱2</div>
+            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱2</div>
             <div style="font-size:11px;color:var(--gray-400);">5 Minutes</div>
           </label>
           <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
             <input type="radio" name="plan" value="15min" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱5</div>
+            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱5</div>
             <div style="font-size:11px;color:var(--gray-400);">15 Minutes</div>
           </label>
           <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
             <input type="radio" name="plan" value="30min" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱10</div>
+            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱10</div>
             <div style="font-size:11px;color:var(--gray-400);">30 Minutes</div>
           </label>
           <label style="padding:12px;border:2px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;text-align:center;">
             <input type="radio" name="plan" value="1hr" style="margin-right:6px;">
-            <div style="font-size:18px;font-weight:bold;color:#667eea;">₱20</div>
+            <div style="font-size:18px;font-weight:bold;color:#c49a6c;">₱20</div>
             <div style="font-size:11px;color:var(--gray-400);">1 Hour</div>
           </label>
           <label style="padding:12px;border:2px solid rgba(251,191,36,0.3);border-radius:8px;background:rgba(251,191,36,0.06);cursor:pointer;text-align:center;">
@@ -166,10 +166,10 @@
           <tbody>
             <% vouchers.forEach(v => { %>
             <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-              <td style="padding:8px 0;font-family:var(--mono);font-weight:600;color:#667eea;"><%= v.code %></td>
+              <td style="padding:8px 0;font-family:var(--mono);font-weight:600;color:#c49a6c;"><%= v.code %></td>
               <td style="padding:8px 0;"><%= v.plan %></td>
               <td style="padding:8px 0;">
-                <span style="padding:4px 8px;border-radius:4px;<%= v.status === 'unused' ? 'background:#4ade80;color:#000;' : v.status === 'active' ? 'background:#667eea;color:#fff;' : 'background:#666;color:#fff;' %>">
+                <span style="padding:4px 8px;border-radius:4px;<%= v.status === 'unused' ? 'background:#4ade80;color:#000;' : v.status === 'active' ? 'background:#8b4d2e;color:#fff;' : 'background:#666;color:#fff;' %>">
                   <%= v.status.toUpperCase() %>
                 </span>
               </td>
