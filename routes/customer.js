@@ -18,9 +18,9 @@ router.get('/', async (req, res) => {
       .single();
 
     res.render('login', {
-      title: "Sam's WiFi",
+      title: "39ers",
       plans: plans || [],
-      gcash: { number: '09985801867', name: 'Sam' },
+      gcash: { number: '09184236749', name: 'Sam' },
       sleepMode: sleepSetting?.setting_value === 'true',
       error: error?.message || null,
       mac: req.query.mac || null
@@ -116,7 +116,7 @@ router.get('/portal', async (req, res) => {
   }
 
   res.render('portal', {
-    title: "Sam's WiFi — Connected",
+    title: "39ers — Connected",
     expiresAt: req.session.expiresAt,
     remainingSeconds: Math.floor(remainingMs / 1000),
     durationMinutes: req.session.durationMinutes || 0,
@@ -126,7 +126,7 @@ router.get('/portal', async (req, res) => {
 
 // 4. EXPIRED PAGE
 router.get('/expired', (req, res) => {
-  res.render('expired', { title: "Sam's WiFi — Session Expired" });
+  res.render('expired', { title: "39ers — Session Expired" });
 });
 
 // 5. ROUTER GATEWAY CHECK — router pings this to allow/block a MAC
