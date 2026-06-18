@@ -19,7 +19,7 @@ router.get('/login', (req, res) => {
     return res.redirect('/admin/dashboard');
   }
   res.render('admin/login', {
-    title: "Sam's WiFi – Admin",
+    title: "39ers – Admin",
     error: req.query.error || null
   });
 });
@@ -68,7 +68,7 @@ router.get('/dashboard', requireAdminAuth, async (req, res) => {
     });
 
     res.render('admin/dashboard', {
-      title: "Sam's WiFi Dashboard",
+      title: "39ers Dashboard",
       settings: systemSettings,
       pricingTiers: tiers || [],
       activeSessions: activeSessions || [],
@@ -119,7 +119,7 @@ router.get('/vouchers', requireAdminAuth, async (req, res) => {
     }));
 
     res.render('admin/vouchers', {
-      title: "Vouchers — Sam's WiFi",
+      title: "Vouchers — 39ers",
       vouchers: mapped,
       counts,
       currentStatus,
@@ -223,7 +223,7 @@ router.get('/orders', requireAdminAuth, async (req, res) => {
     });
 
     res.render('admin/orders', {
-      title: "Orders — Sam's WiFi",
+      title: "Orders — 39ers",
       orders: orders || [],
       pricingTiers: tiers || [],
       counts,
