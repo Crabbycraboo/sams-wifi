@@ -9,14 +9,14 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Generates a random voucher token in SAM-XXXXXXXX format
+// Generates a random voucher token in 39ERS-XXXXXXXX format
 function generateToken() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I confusion
   let code = '';
   for (let i = 0; i < 8; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
-  return `SAM-${code}`;
+  return `39ERS-${code}`;
 }
 
 // Generates a batch of vouchers and inserts them into Supabase
